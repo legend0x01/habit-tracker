@@ -9,4 +9,9 @@
 window.HABIT_CONFIG = {
   supabaseUrl: "https://tmllonrprlxcmbduipjo.supabase.co",
   supabaseAnonKey: "sb_publishable_J3U0CrrUnVlVXCnfcrBdRQ_inmJTe-d",
+
+  // "Buy me a coffee" via UPI (support.html). Leave upiId empty to hide the button.
+  // Accepts a plain UPI ID (name@bank) or the same ID base64-encoded (keeps it out of plain-text scrapers).
+  upiId: "dHJhZGVyYWJoaW5hdjY5OS0yQG9rc2Jp",
+  upiName: "legend0x01",
 };

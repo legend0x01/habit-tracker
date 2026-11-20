@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Support Habit Tracker</title>
+<link rel="icon" type="image/png" href="assets/logo-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08121f;--p:#0e1e33;--p2:#12284a;--ln:#1a3352;--tx:#e6edf6;--mu:#8ea2bb;--dim:#58708c;--c:#1fb5e0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.6 'Quicksand',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:440px;margin:0 auto;padding:32px 16px 50px}
+a{color:var(--c)}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:22px;text-decoration:none;color:inherit;font-weight:700;font-size:15px}
+.top img{width:28px;height:28px}
+.card{background:var(--p);border:1px solid var(--ln);border-radius:14px;padding:24px 20px;text-align:center;box-shadow:0 10px 40px -20px #000}
+h1{font-size:24px;margin:0 0 4px;font-weight:700}
+.lead{color:var(--mu);margin:0 0 18px}
+.amts{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.amt{background:var(--p2);border:1px solid var(--ln);border-radius:9px;padding:8px 14px;font:inherit;font-weight:700;color:var(--tx);cursor:pointer;min-width:64px}
+.amt:hover{border-color:#2f5a8c}
+.amt.on{background:linear-gradient(135deg,#1a9cc0,#6a52ea);border-color:transparent;color:#fff}
+.custom{display:flex;align-items:center;justify-content:center;gap:6px;margin:-4px 0 16px;color:var(--mu)}
+.custom input{width:110px;background:#0a1729;border:1px solid var(--ln);border-radius:8px;padding:7px 10px;color:var(--tx);font:inherit;font-weight:700;text-align:center;outline:none}
+.custom input:focus{border-color:#2f6fb0}
+.qr{display:inline-block;background:#fff;border-radius:12px;padding:10px;line-height:0}
+.qr svg{width:220px;height:220px;display:block}
+.scan{color:var(--mu);font-size:12px;margin:10px 0 16px}
+.btn{display:block;width:100%;border-radius:10px;padding:12px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;border:1px solid var(--ln);background:var(--p2);color:var(--tx);margin-top:8px}
+.btn.pri{background:linear-gradient(135deg,#1a9cc0,#6a52ea);border-color:transparent;color:#fff}
+.btn:hover{filter:brightness(1.1)}
+.id{margin-top:14px;font-size:12px;color:var(--mu)}
+.id b{color:var(--tx);font-size:13px;user-select:all}
+.fine{color:var(--dim);font-size:11.5px;margin-top:18px}
+.mobile-only{display:none}
+@media (hover:none) and (pointer:coarse){.mobile-only{display:block}}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#12284a;border:1px solid #2f5a8c;padding:9px 16px;border-radius:9px;font-weight:600;font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<a class="top" href="./"><img src="assets/logo-512.png" alt="">Habit Tracker</a>
+<div class="card" id="card">
+  <div style="font-size:34px;line-height:1">☕</div>
+  <h1>Buy me a coffee</h1>
+  <p class="lead">Habit Tracker is free and open source. If it helps you build better habits, you can support its development.</p>
+  <div id="pay"></div>
+</div>
+<p class="fine" style="text-align:center">Payments go directly to the developer's bank account via UPI. No fees, no sign-up, and nothing is stored by this site.<br><a href="./">← Back to the tracker</a></p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="config.js"></script>
+<script>
+const CFG=window.HABIT_CONFIG||{};
+const decodeUpi=v=>{v=String(v||"").trim();if(v.includes("@"))return v;try{return atob(v).trim()}catch(e){return""}};
+const UPI=decodeUpi(CFG.upiId),NAME=(CFG.upiName||"Habit Tracker").trim();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=s=>document.querySelector(s);
+let amount=99;
+
+function upiLink(){
+  const p=new URLSearchParams({pa:UPI,pn:NAME,cu:"INR",tn:"Support Habit Tracker"});
+  if(amount>0)p.set("am",amount.toFixed(2));
+  return"upi://pay?"+p.toString().replace(/\+/g,"%20").replace(/%40/g,"@"); // some UPI apps reject an encoded @
+}
+function draw(){
+  const link=upiLink();
+  let svg="";
+  try{const q=qrcode(0,"M");q.addData(link);q.make();svg=q.createSvgTag({cellSize:6,margin:2,scalable:true})}catch(e){svg=""}
+  $("#qr").innerHTML=svg||'<div style="padding:40px;color:#333">QR unavailable — use the UPI ID below</div>';
+  $("#open").href=link;
+  $("#scanTxt").textContent=amount>0?`Scan with any UPI app to pay ₹${amount}`:"Scan with any UPI app and enter any amount";
+  document.querySelectorAll(".amt").forEach(b=>b.classList.toggle("on",+b.dataset.a===amount));
+}
+
+if(!/^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/.test(UPI)){
+  $("#pay").innerHTML='<p class="lead" style="margin:0">Support options are coming soon. Thanks for your interest!</p>';
+}else{
+  $("#pay").innerHTML=`
+    <div class="amts">${[49,99,199,499].map(a=>`<button class="amt" data-a="${a}">₹${a}</button>`).join("")}<button class="amt" data-a="0">Any</button></div>
+    <div class="custom"><span>or ₹</span><input id="cust" type="number" min="1" max="100000" inputmode="numeric" placeholder="custom"></div>
+    <div class="qr" id="qr"></div>
+    <div class="scan" id="scanTxt"></div>
+    <a class="btn pri mobile-only" id="open" href="#">Pay with UPI app</a>
+    <div class="id">GPay · PhonePe · Paytm · BHIM · any UPI app</div>`;
+  document.addEventListener("click",e=>{
+    const b=e.target.closest(".amt");if(b){amount=+b.dataset.a;$("#cust").value="";draw()}
+  });
+  $("#cust").addEventListener("input",e=>{const v=Math.floor(+e.target.value||0);amount=v>0&&v<=100000?v:0;draw()});
+  draw();
+}
+</script>
+</body>
+</html>

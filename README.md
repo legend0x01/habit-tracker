@@ -99,6 +99,12 @@ terms.html            terms of service
 assets/               logo (120px for Google branding, 512px favicon)
 ```
 
+## Support
+
+If this project helps you, you can [☕ buy me a coffee](https://legend0x01.github.io/habit-tracker/support.html) via UPI (no fees, any UPI app).
+
+Self-hosting? Set `upiId` in `config.js` to show your own Support button, or leave it empty to hide it.
+
 ## License
 
 [MIT](LICENSE)

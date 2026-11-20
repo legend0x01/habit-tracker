@@ -262,6 +262,7 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
   <button class="btn ghost" data-act="today">Today</button>
   <div class="yearsw"><button data-act="yprev" title="Previous year">‹</button><select id="ysel" aria-label="Year"></select><button data-act="ynext" title="Next year">›</button></div>
   <button class="btn ghost" data-act="backup">Backup</button>
+  <a id="support" class="btn ghost hidden" href="support.html" style="text-decoration:none" title="Support this project">☕ Support</a>
   <div id="acct" class="acct"></div>
 </header>
 <nav id="tabs" class="tabs"></nav>
@@ -653,6 +654,8 @@ const CFG=window.HABIT_CONFIG||{};
 const SB_ON=!!(window.supabase&&CFG.supabaseUrl&&CFG.supabaseAnonKey&&!/YOUR_/.test(CFG.supabaseUrl+CFG.supabaseAnonKey));
 const sb=SB_ON?window.supabase.createClient(CFG.supabaseUrl,CFG.supabaseAnonKey):null;
 const GUEST_OK=LS_KEY+":guest-ok";
+const HAS_UPI=(()=>{let v=String(CFG.upiId||"").trim();if(!v.includes("@"))try{v=atob(v)}catch(e){v=""}return/^[\w.\-]{2,256}@[a-zA-Z]{2,64}$/.test(v.trim())})();
+if(HAS_UPI)$("#support").classList.remove("hidden");
 let user=null,mode=SB_ON?"pending":"guest",synced=false,chan=null,saving=false,timer=null,retryT=null,pullT=null;const dirty=new Set();
 
 function setStatus(kind,txt){const el=$("#status");el.style.setProperty("--dot",{cloud:"#22c55e",local:"#eab308",saving:"#1fb5e0",err:"#f0476a",load:"#8ea2bb"}[kind]);el.textContent=txt}
@@ -750,7 +753,7 @@ function viewAuth(){
   <button class="btn gbtn" data-act="signin">${GLOGO}Continue with Google</button>
   <button class="btn" data-act="guest">Use without an account</button>
   <p class="fine">Without an account, data stays in this browser only. Sign in later and it moves into your account.</p>
-  <p class="fine"><a href="privacy.html" style="color:var(--mu)">Privacy</a> · <a href="terms.html" style="color:var(--mu)">Terms</a> · <a href="https://github.com/legend0x01/habit-tracker" style="color:var(--mu)">GitHub</a></p></div>`;
+  <p class="fine"><a href="privacy.html" style="color:var(--mu)">Privacy</a> · <a href="terms.html" style="color:var(--mu)">Terms</a> · <a href="https://github.com/legend0x01/habit-tracker" style="color:var(--mu)">GitHub</a>${HAS_UPI?` · <a href="support.html" style="color:var(--mu)">☕ Support</a>`:""}</p></div>`;
 }
 
 /* ================= actions ================= */
