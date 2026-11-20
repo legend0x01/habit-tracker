@@ -4,6 +4,8 @@ A dark-themed habit tracker that runs in the browser — a yearly planner, 12 mo
 
 **Live demo:** https://legend0x01.github.io/habit-tracker/
 
+![Habit Tracker monthly dashboard](screenshots/home.png)
+
 No build step, no framework: one `index.html`, one `config.js`, one SQL file.
 
 ## Features
