@@ -43,7 +43,7 @@ Fix streak reset when a month has no goal
 
 ## Code of conduct
 
-Be kind and respectful. Harassment or discrimination of any kind isn't tolerated. Maintainers may remove comments or contributions that break this rule.
+Please read and follow the [Code of Conduct](CODE_OF_CONDUCT.md). In short: be kind and respectful.
 
 ## License
 
