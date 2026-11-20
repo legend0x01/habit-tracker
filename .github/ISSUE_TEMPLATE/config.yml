@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/legend0x01/habit-tracker/security/advisories/new
+    about: Please report security issues privately, not as public issues.
+  - name: Try the live app
+    url: https://legend0x01.github.io/habit-tracker/
+    about: Check whether the issue happens on the live version.

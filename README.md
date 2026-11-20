@@ -1,110 +1,209 @@
+<div align="center">
+
+<img src="assets/logo-512.png" alt="Habit Tracker logo" width="96" height="96">
+
 # Habit Tracker
 
-A dark-themed habit tracker that runs in the browser — a yearly planner, 12 monthly dashboards and an annual dashboard — with **Google sign-in** and **cloud sync via [Supabase](https://supabase.com)**.
+**Plan your year, tick your days, watch your streaks grow.**
 
-**Live demo:** https://legend0x01.github.io/habit-tracker/
+A free, open-source habit tracker with a yearly planner, monthly and annual dashboards,<br>
+streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 
-No build step, no framework: one `index.html`, one `config.js`, one SQL file.
+[![Live demo](https://img.shields.io/badge/Live_demo-Open_app-22c55e?style=for-the-badge&logo=googlechrome&logoColor=white)](https://legend0x01.github.io/habit-tracker/)
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-1fb5e0.svg)](LICENSE)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth_%2B_Postgres-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Vanilla JS](https://img.shields.io/badge/Vanilla-JavaScript-F7DF1E?logo=javascript&logoColor=black)](index.html)
+[![No build step](https://img.shields.io/badge/Build_step-None-7357f6)](#-run-it-locally)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-e8b20e.svg)](CONTRIBUTING.md)
 
-- **Planner** — daily habits with per-month goals, plus weekly habits switched on per month
-- **Monthly dashboard** — tick grid, momentum / daily / weekly / monthly progress rings, daily progress chart, top habits, active streaks, notes
-- **Annual dashboard** — goal-vs-done per month, quarterly progress, top habits, weekly-habit breakdown
-- **Multi-year** — each year keeps its own data; new years can carry over last year's habits
-- **Google sign-in** — data synced to your account and kept private with Postgres row-level security
-- **Live sync** — changes on one device show up in your other open tabs and devices
-- **Works offline / without an account** — guest mode saves to the browser; sign in later and the data moves into your account
-- **Backup & restore** — export/import everything as JSON
+[**Live demo**](https://legend0x01.github.io/habit-tracker/) ·
+[Features](#-features) ·
+[Screenshots](#-screenshots) ·
+[Self-host](#-self-host-it) ·
+[Roadmap](#-roadmap) ·
+[Contributing](CONTRIBUTING.md)
 
-## Tech
+<br>
 
-| Part | Choice |
-| --- | --- |
-| Frontend | Vanilla HTML, CSS, JavaScript (hand-drawn SVG charts) |
-| Auth | Supabase Auth, Google OAuth provider |
-| Database | Supabase Postgres, one `jsonb` row per user per year, RLS |
-| Sync | Debounced upserts + Supabase Realtime, `localStorage` cache |
+<img src="docs/screenshots/dashboard.png" alt="Monthly dashboard with progress rings, daily progress chart, active streaks and the habit tick grid" width="100%">
 
-## Run it locally
+</div>
 
-Google sign-in needs `http://` (not `file://`), so serve the folder:
+<br>
 
-```bash
-npx serve .              # → http://localhost:3000
-# or
-python -m http.server 5173   # → http://localhost:5173
+## ✨ Features
+
+**Track**
+- **Monthly dashboard**: tick grid for every day, grouped by week, with today highlighted
+- **Quick add**: type a habit under the grid and press Enter; it's trackable immediately
+- **Weekly habits** for things you do once a week (laundry, meal prep, calling family)
+- **Notes** for each month: wins, reflections, plans
+
+**Understand**
+- **Progress rings**: momentum (7-day rolling), daily, weekly and monthly completion
+- **Streaks** per habit, optionally carried across months and into the next year
+- **Annual dashboard**: goal vs. done per month, quarterly progress, ✔/✘ per habit per month, top habits, weekly-habit breakdown
+
+**Plan**
+- **Yearly planner**: set how many days per month you aim to do each habit, or switch a habit off for a month
+- **Multi-year**: each year keeps its own data; a new year can carry over last year's habits and goals
+
+**Sync and own your data**
+- **Google sign-in** with Supabase Auth; data is private to your account through Postgres row-level security
+- **Real-time sync** between your devices and open tabs
+- **Guest mode**: use it without an account; sign in later and your data moves into your account
+- **Backup and restore** everything as JSON
+- **Responsive**: works on phones, tablets and desktops
+
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/annual.png" alt="Annual dashboard"><p align="center"><b>Annual dashboard</b></p></td>
+    <td width="50%"><img src="docs/screenshots/planner.png" alt="Yearly planner"><p align="center"><b>Yearly planner</b></p></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/mobile.png" alt="The app on phones"><p align="center"><b>On mobile</b></p></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/sign-in.png" alt="Sign-in screen"><p align="center"><b>Sign in with Google, or use it without an account</b></p></td>
+  </tr>
+</table>
+
+<sub>Screenshots use generated demo data.</sub>
+
+## 🧱 Tech stack
+
+| Layer | Choice | Why |
+| --- | --- | --- |
+| UI | Vanilla HTML, CSS, JavaScript | Zero dependencies to update, loads instantly, easy to read |
+| Charts | Hand-written SVG | Rings, line, bar, combo and donut charts in ~100 lines |
+| Auth | [Supabase Auth](https://supabase.com/docs/guides/auth) with Google OAuth | Secure sign-in without running a server |
+| Database | Supabase Postgres + row-level security | Each user can only ever read and write their own rows |
+| Sync | Debounced upserts + Supabase Realtime | Fast local edits, live updates on other devices |
+| Offline cache | `localStorage` | Instant load, keeps working when the network drops |
+| Hosting | GitHub Pages | Free static hosting |
+
+## 🔧 How it works
+
+```mermaid
+flowchart LR
+    U([You]) -->|tick a habit| APP[Browser app<br/>index.html]
+    APP -->|instant| LS[(localStorage<br/>cache)]
+    APP -->|debounced upsert| DB[(Supabase Postgres<br/>habit_years + RLS)]
+    DB -->|Realtime| OTHER[Your other<br/>devices and tabs]
+    APP <-->|Google OAuth| AUTH[Supabase Auth]
 ```
 
-With the placeholder `config.js` the app runs in **local-only mode** (no sign-in). Follow the setup below to turn on accounts.
+- Every edit is written to `localStorage` immediately and sent to Supabase about 0.7 s later.
+- Each **year is one row** (`user_id`, `year`, `data jsonb`). When two devices disagree, the copy with the newer `updatedAt` wins.
+- Daily check-ins are stored compactly as one `"0"/"1"` string per habit, one character per day of the year.
+- Row-level security policies in [`supabase/schema.sql`](supabase/schema.sql) restrict every query to `auth.uid() = user_id`.
 
-## Set up Supabase + Google sign-in
+<details>
+<summary><b>Data model</b></summary>
 
-### 1. Create the Supabase project
-
-1. Create a project at [supabase.com/dashboard](https://supabase.com/dashboard).
-2. Open **SQL Editor → New query**, paste [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
-3. Open **Project Settings → API** and copy the **Project URL** and the **anon / publishable key** into [`config.js`](config.js).
-
-> The anon key is meant to be public — row-level security is what protects the data. Never put the `service_role` / secret key in the frontend.
-
-### 2. Create Google OAuth credentials
-
-1. In [Google Cloud Console](https://console.cloud.google.com/) create (or pick) a project.
-2. **APIs & Services → OAuth consent screen**: choose *External*, fill in the app name and your email, and add the scopes `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`.
-3. **APIs & Services → Credentials → Create credentials → OAuth client ID**, type **Web application**.
-   - **Authorized JavaScript origins**: your site URLs, e.g. `http://localhost:3000` and `https://<you>.github.io`
-   - **Authorized redirect URIs**: `https://<your-project-ref>.supabase.co/auth/v1/callback`
-     (Supabase shows this exact URL on the Google provider page.)
-4. Copy the **Client ID** and **Client secret**.
-
-### 3. Turn on Google in Supabase
-
-1. **Authentication → Sign In / Providers → Google**: enable it and paste the Client ID and secret.
-2. **Authentication → URL Configuration**:
-   - **Site URL**: your production URL (e.g. `https://<you>.github.io/habit-tracker/`)
-   - **Redirect URLs**: add every place the app runs, e.g. `http://localhost:3000/**` and `https://<you>.github.io/habit-tracker/**`
-
-Reload the app — you'll see **Continue with Google**.
-
-## Deploy (GitHub Pages)
-
-1. Push this folder to a GitHub repo.
-2. **Settings → Pages → Build and deployment**: *Deploy from a branch*, branch `main`, folder `/ (root)`.
-3. Add the Pages URL to the Google **Authorized JavaScript origins** and to Supabase **Redirect URLs** / **Site URL**.
-
-Any static host works the same way (Netlify, Vercel, Cloudflare Pages).
-
-## How the data is stored
-
-```
+```text
 public.habit_years
-  user_id    uuid   → auth.users.id   (default auth.uid())
+  user_id    uuid         → auth.users.id   (default auth.uid())
   year       int
-  data       jsonb  → { habits, weekly, checks, wchecks, notes, carry, updatedAt }
+  data       jsonb        → { habits, weekly, checks, wchecks, notes, carry, updatedAt }
   updated_at timestamptz
   primary key (user_id, year)
 ```
+</details>
 
-Daily check-ins are stored compactly as one `"0"/"1"` string per habit (one character per day of the year). Edits are cached in `localStorage` immediately and upserted to Supabase after a short debounce; when two devices disagree, the copy with the newer `updatedAt` wins.
+## 🚀 Run it locally
 
-## Project structure
+Google sign-in needs `http://`, not `file://`, so serve the folder:
 
-```
-index.html            the whole app (UI, charts, sync)
-config.js             your Supabase URL + anon key
-supabase/schema.sql   table, row-level security policies, realtime
-privacy.html          privacy policy (needed for the Google consent screen)
-terms.html            terms of service
-assets/               logo (120px for Google branding, 512px favicon)
+```bash
+git clone https://github.com/legend0x01/habit-tracker.git
+cd habit-tracker
+python -m http.server 3000      # or: npx serve -l 3000 .
 ```
 
-## Support
+Open <http://localhost:3000>. To run your own copy, put your Supabase keys in `config.js` (see below). If you put placeholder values there (e.g. `YOUR_PROJECT_REF`), the app runs in **local-only mode**: no sign-in, data saved in the browser.
 
-If this project helps you, you can [☕ buy me a coffee](https://legend0x01.github.io/habit-tracker/support.html) via UPI (no fees, any UPI app).
+## 🧰 Self-host it
 
-Self-hosting? Set `upiId` in `config.js` to show your own Support button, or leave it empty to hide it.
+You'll need a free [Supabase](https://supabase.com) project and a Google Cloud OAuth client. It takes about 15 minutes.
 
-## License
+<details>
+<summary><b>1. Supabase project and database</b></summary>
 
-[MIT](LICENSE)
+1. Create a project at [supabase.com/dashboard](https://supabase.com/dashboard).
+2. **SQL Editor → New query**: paste [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
+3. **Project Settings → API Keys**: copy the **Project URL** and the **publishable / anon** key into [`config.js`](config.js).
+
+> The publishable key is meant to be public. Row-level security protects the data. Never put the `service_role` / secret key in frontend code.
+</details>
+
+<details>
+<summary><b>2. Google OAuth client</b></summary>
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and open **Google Auth Platform → Get started** (External audience).
+2. **Branding**: add your home page, privacy policy and terms URLs, plus authorised domains `<project-ref>.supabase.co` and your site's domain.
+3. **Clients → Create client → Web application**:
+   - Authorized JavaScript origins: `http://localhost:3000`, `https://<you>.github.io`
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+4. **Audience → Publish app**.
+</details>
+
+<details>
+<summary><b>3. Connect Google to Supabase</b></summary>
+
+1. **Authentication → Sign In / Providers → Google**: enable it and paste the Client ID and secret.
+2. **Authentication → URL Configuration**:
+   - Site URL: `https://<you>.github.io/habit-tracker/`
+   - Redirect URLs: `http://localhost:3000/**` and `https://<you>.github.io/habit-tracker/**`
+</details>
+
+<details>
+<summary><b>4. Deploy to GitHub Pages</b></summary>
+
+1. Push the repo to GitHub.
+2. **Settings → Pages**: deploy from branch `main`, folder `/ (root)`.
+3. Every push to `main` redeploys in about a minute.
+
+Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
+</details>
+
+## 📁 Project structure
+
+```text
+├── index.html            the whole app: UI, charts, sync
+├── config.js             Supabase URL + publishable key, optional UPI ID
+├── supabase/schema.sql   table, row-level security policies, realtime
+├── support.html          "buy me a coffee" page (UPI QR)
+├── privacy.html          privacy policy (needed for Google sign-in)
+├── terms.html            terms of service
+├── assets/               logo, favicon, social preview image
+└── docs/screenshots/     README images
+```
+
+## 🧭 Roadmap
+
+- [x] Google sign-in and cloud sync
+- [x] Real-time sync across devices
+- [x] Quick-add habits from the monthly grid
+- [ ] Installable app (PWA) with offline support
+- [ ] Daily reminder notifications
+- [ ] Export a month or year as CSV / PDF
+- [ ] Light theme
+- [ ] Habit categories and colours
+
+Have an idea? [Open an issue](https://github.com/legend0x01/habit-tracker/issues/new/choose).
+
+## 🤝 Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) to get started, and please report security issues privately as described in [SECURITY.md](SECURITY.md).
+
+## ☕ Support
+
+If this project helps you, you can [buy me a coffee](https://legend0x01.github.io/habit-tracker/support.html) via UPI. A ⭐ on the repo helps too.
+
+## 📄 License
+
+[MIT](LICENSE) © legend0x01
