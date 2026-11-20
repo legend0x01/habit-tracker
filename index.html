@@ -133,6 +133,12 @@ td.c:hover .cb{transform:scale(1.18);opacity:1}
 .trk .prh small{display:block;letter-spacing:.3px;text-transform:none;color:var(--mu);font-weight:500;font-size:9.5px;margin-top:2px}
 .trk tfoot td{font-weight:700;color:var(--mu);font-size:10px;padding:6px 0;border-bottom:none}
 .trk tfoot .hn{color:#cfdbea;font-size:10.5px;letter-spacing:1px;text-transform:uppercase}
+.trk .addrow td{border-bottom:none}
+.trk .addrow .hn{padding:6px 8px 6px 4px;overflow:visible}
+.qa{width:100%;background:#0a1729;border:1px dashed #2a4a72;border-radius:6px;padding:6px 9px;font-size:12px;font-weight:600;outline:none;color:var(--tx);transition:.12s}
+.qa::placeholder{color:var(--mu)}
+.qa:hover{border-color:#2f5a8c}
+.qa:focus{border-style:solid;border-color:#2f6fb0;background:#0b1a2e}
 .fire{color:#ffb547}
 .fire.z{color:var(--dim)}
 
@@ -486,13 +492,14 @@ function viewMonth(m){
   h+=`</tr><tr>`;
   for(let d=1;d<=S.n;d++)h+=`<th class="dn${isToday(y,m,d)?" tdc":""}${d%7===0&&d<S.n&&d<=28?" wend":""}"><span>${d}</span></th>`;
   h+=`</tr></thead><tbody>`;
-  if(!S.rows.length)h+=`<tr><td class="hn" colspan="2"></td><td colspan="${S.n+4}" class="empty" style="text-align:left">No daily habits this month. Open the <b>Planner</b> tab and give a habit a goal above 0 for ${MONTHS[m]}.</td></tr>`;
+  if(!S.rows.length)h+=`<tr><td class="hn" colspan="2"></td><td colspan="${S.n+4}" class="empty" style="text-align:left">No daily habits this month yet. Type one in the box below and press Enter.</td></tr>`;
   for(const r of S.rows){
     h+=`<tr><td class="hn" title="${esc(r.h.name)}">${esc(r.h.name)}</td><td class="hg">${r.g}</td>`;
     for(let d=1;d<=S.n;d++){const i=S.s0+d-1,on=isChk(y,r.h.id,i),fut=S.ref<d;
       h+=`<td class="c b${bk(d)}${fut?" fut":""}${isToday(y,m,d)?" tdc":""}${d%7===0&&d<S.n&&d<=28?" wend":""}" data-h="${r.h.id}" data-i="${i}"><i class="cb${on?" on":""}"></i></td>`}
     h+=`<td class="pc">${r.c}/${r.g}</td><td class="pb"><div class="bar"><i style="width:${f1(cl(r.p)*100)}%;background:${pcol(r.p)}"></i></div></td><td class="pp">${pc(r.p)}</td><td class="ps"><span class="fire${r.st?"":" z"}">${r.st?"🔥 "+r.st:"0"}</span></td></tr>`;
   }
+  h+=`<tr class="addrow"><td class="hn" colspan="2"><form data-f="quickadd" data-m="${m}" autocomplete="off"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a habit" title="Type a habit (e.g. Play games) and press Enter" aria-label="Add a daily habit"></form></td><td colspan="${S.n+4}"></td></tr>`;
   h+=`</tbody><tfoot><tr><td class="hn">Done today</td><td class="hg"></td>`;
   for(let d=1;d<=S.n;d++)h+=`<td style="color:${S.daily[d]?WC[bk(d)]:"var(--dim)"}">${S.daily[d]}</td>`;
   h+=`<td colspan="4" style="text-align:left;padding-left:12px;color:#cfdbea">${S.done} / ${S.goal}</td></tr></tfoot></table></div></div>`;
@@ -819,6 +826,18 @@ document.addEventListener("input",e=>{
   else if(f==="hgoal"){const h=findH(t.dataset.h),m=+t.dataset.m;if(!h)return;let v=parseInt(t.value,10);if(isNaN(v))v=0;v=Math.max(0,Math.min(dim(curY,m),v));h.goals[m]=v;t.parentElement.classList.toggle("zero",!v);touch();updPlanTotals()}
   else if(f==="wname"){const w=Y.weekly.find(w=>w.id===t.dataset.w);if(w){w.name=t.value;touch()}}
   else if(f==="note"){Y.notes[+t.dataset.m]=t.value;touch()}
+});
+/* quick add from a month's tracker: the habit starts this month and runs every day from here on */
+document.addEventListener("submit",e=>{
+  const f=e.target;if(f.dataset.f!=="quickadd")return;e.preventDefault();
+  const Y=years[curY];if(!Y)return;const name=(f.q.value||"").trim();if(!name)return;
+  if(Y.habits.length>=50){toast("Up to 50 daily habits");return}
+  if(Y.habits.some(h=>h.name.trim().toLowerCase()===name.toLowerCase()&&(+h.goals[+f.dataset.m]||0)>0)){toast(`"${name}" is already on your list`);return}
+  const m=+f.dataset.m,n=now(),thisMonth=curY===n.y&&m===n.m;
+  // in the current month the goal is the days still left (incl. today), so it stays reachable
+  Y.habits.push({id:uid("h"),name,goals:MS.map((_,i)=>i<m?0:i===m&&thisMonth?dim(curY,i)-n.d+1:dim(curY,i))});
+  touch();render();toast(`Added "${name}"`);
+  const inp=document.querySelector(".qa");if(inp)inp.focus({preventScroll:true}); // ready for the next one
 });
 document.addEventListener("change",e=>{
   const t=e.target;
