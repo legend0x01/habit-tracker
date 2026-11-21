@@ -353,7 +353,47 @@ let curY=now().y, view=null, ready=false;
 function lsKey(){return user?LS_KEY+":u:"+user.id:LS_KEY}
 function readLS(key){try{const o=JSON.parse(localStorage.getItem(key)||"null");return o&&o.years&&typeof o.years==="object"?o.years:{}}catch(e){return{}}}
 function loadLocal(){for(const k in years)delete years[k];const o=readLS(lsKey());for(const k in o){if(!/^\d{4}$/.test(k))continue;o[k].year=+k;years[k]=norm(o[k])}}
-function saveLocal(){try{localStorage.setItem(lsKey(),JSON.stringify({years}))}catch(e){}}
+function saveLocal(){try{localStorage.setItem(lsKey(),JSON.stringify({years}));if(user)localStorage.setItem(lsKey()+":base",JSON.stringify(base))}catch(e){}}
+/* base[y] = the last copy of year y this device and the cloud agreed on. Comparing against it tells us
+   which edits were made here and which on another device, so both survive a sync. */
+let base={};
+function loadBase(){base={};try{const o=JSON.parse(localStorage.getItem(lsKey()+":base")||"null");if(o&&typeof o==="object")base=o}catch(e){}}
+
+/* ---------- three-way merge ---------- */
+const isObj=v=>v&&typeof v==="object"&&!Array.isArray(v);
+function same(a,b){ // deep equality that ignores key order (Postgres jsonb reorders keys)
+  if(a===b)return true;
+  if(Array.isArray(a)){if(!Array.isArray(b)||a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(!same(a[i],b[i]))return false;return true}
+  if(isObj(a)&&isObj(b)){const ka=Object.keys(a);if(ka.length!==Object.keys(b).length)return false;for(const k of ka)if(!(k in b)||!same(a[k],b[k]))return false;return true}
+  return false}
+const sameY=(a,b)=>same({...a,updatedAt:0},{...b,updatedAt:0});
+function pick(b,l,r,text){ // one value: whichever side changed it wins; if both did, this device wins
+  if(same(l,r))return l;
+  if(b!=null){if(same(l,b))return r;return l}
+  return text?(String(r||"").length>=String(l||"").length?r:l):r} // no shared history: trust the cloud (longer note)
+function mergeBits(b,l,r){ // '0'/'1' tick strings, merged day by day
+  l=l||"";r=r||"";const n=Math.max(l.length,r.length);l=l.padEnd(n,"0");r=r.padEnd(n,"0");let s="";
+  if(b==null){for(let i=0;i<n;i++)s+=l[i]==="1"||r[i]==="1"?"1":"0";return s} // no history: keep every tick
+  b=b.padEnd(n,"0");for(let i=0;i<n;i++)s+=l[i]!==b[i]?l[i]:r[i];return s}
+function mergeBitsMap(b,l,r,keep){const o={};for(const k of new Set([...Object.keys(l),...Object.keys(r)]))if(keep.has(k))o[k]=mergeBits(b?b[k]??null:null,l[k],r[k]);return o}
+function mergeList(b,l,r,fn){ // habit lists, matched by id
+  const bm=new Map((b||[]).map(x=>[x.id,x])),rm=new Map(r.map(x=>[x.id,x])),lm=new Set(l.map(x=>x.id)),out=[];
+  for(const x of l){const y=rm.get(x.id);
+    if(y)out.push(fn(bm.get(x.id),x,y));
+    else if(!bm.has(x.id)||!same(x,bm.get(x.id)))out.push(x)} // added here (or edited here after the other device deleted it)
+  r.forEach((y,i)=>{if(lm.has(y.id))return;const bx=bm.get(y.id);if(bx&&same(y,bx))return; // deleted here
+    out.splice(Math.min(i,out.length),0,y)}); // added on another device
+  return out}
+function mergeYear(B,L,R){
+  const o={...R,...L};
+  o.carry=pick(B&&B.carry,L.carry,R.carry);
+  o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i]))}));
+  o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i]))}));
+  o.checks=mergeBitsMap(B&&B.checks,L.checks,R.checks,new Set(o.habits.map(h=>h.id)));
+  o.wchecks=mergeBitsMap(B&&B.wchecks,L.wchecks,R.wchecks,new Set(o.weekly.map(w=>w.id)));
+  o.notes=L.notes.map((t,i)=>pick(B&&B.notes&&B.notes[i],t,R.notes[i],true));
+  o.updatedAt=Math.max(L.updatedAt||0,R.updatedAt||0);
+  return o}
 function defaultView(){const n=now();return curY===n.y?"m"+n.m:"planner"}
 
 function norm(Y){ // make sure a year object has every field
@@ -713,10 +753,24 @@ function setStatus(kind,txt){const el=$("#status");el.style.setProperty("--dot",
 function touch(y=curY){years[y].updatedAt=Date.now();saveLocal();dirty.add(y);
   if(mode!=="cloud"){setStatus("local","Saved in this browser");return}
   setStatus("saving","Saving…");clearTimeout(timer);timer=setTimeout(flush,700)}
+function rerender(y){const a=document.activeElement;if(+y===curY){if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()}else renderYearSel()}
+function absorb(y,data){ // fold a cloud copy of year y into this device's copy; returns true if what you see changed
+  y=+y;const R=norm(clone(data));R.year=y;const L=years[y];
+  const M=L?norm(mergeYear(base[y]||null,L,R)):R;M.year=y;
+  years[y]=M;base[y]=clone(R);saveLocal();
+  if(L&&!sameY(M,R))dirty.add(y); // this device has edits the cloud doesn't
+  return !L||!sameY(M,L);
+}
 async function writeYear(y){
-  const Y=years[y];if(!Y)return;
-  const{error}=await sb.from("habit_years").upsert({user_id:user.id,year:+y,data:clone(Y),updated_at:new Date(Y.updatedAt||Date.now()).toISOString()},{onConflict:"user_id,year"});
+  if(!years[y])return;
+  // read first: another device may have saved since we last synced, and its edits must not be overwritten
+  const{data:row,error:e1}=await sb.from("habit_years").select("data").eq("user_id",user.id).eq("year",+y).maybeSingle();
+  if(e1)throw e1;
+  if(row&&row.data&&!same(row.data,base[y])&&absorb(y,row.data))rerender(y);
+  dirty.delete(+y);const snap=clone(years[y]);
+  const{error}=await sb.from("habit_years").upsert({user_id:user.id,year:+y,data:snap,updated_at:new Date().toISOString()},{onConflict:"user_id,year"});
   if(error)throw error;
+  base[y]=snap;saveLocal();
 }
 async function flush(){
   if(saving||mode!=="cloud"||!synced)return;saving=true;clearTimeout(retryT);
@@ -733,34 +787,46 @@ function subscribe(){ // live updates from your other devices/tabs
   const me=user;
   chan=sb.channel("habit-years-"+me.id).on("postgres_changes",{event:"*",schema:"public",table:"habit_years",filter:"user_id=eq."+me.id},p=>{
     const row=p.new;if(user!==me||!row||row.year==null||!row.data)return;
-    const y=+row.year,d=row.data,cur=years[y];
-    if(cur&&(d.updatedAt||0)<=(cur.updatedAt||0))return;if(dirty.has(y))return;
-    years[y]=norm(clone(d));years[y].year=y;saveLocal();
-    const a=document.activeElement;
-    if(y===curY){if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render()}else renderYearSel();
+    const y=+row.year;
+    if(base[y]&&same(row.data,base[y]))return; // our own save coming back
+    if(absorb(y,row.data))rerender(y);
+    if(dirty.size){clearTimeout(timer);timer=setTimeout(flush,700)}
   }).subscribe();
 }
-async function pull(me){ // first fetch after sign-in: merge cloud rows with this browser's copy
+async function pull(me,again){ // fetch the cloud copy and merge it with this browser's copy
   clearTimeout(pullT);
   const{data,error}=await sb.from("habit_years").select("year,data").eq("user_id",me.id);
   if(user!==me)return;
   if(error){console.warn("Supabase load failed",error);
-    if(Object.keys(years).length){ready=true;render()}
-    setStatus("err","Can't reach the cloud — retrying…");pullT=setTimeout(()=>pull(me),8000);return}
+    if(!again&&Object.keys(years).length){ready=true;render()}
+    setStatus("err","Can't reach the cloud — retrying…");pullT=setTimeout(()=>pull(me,again),8000);return}
   const remote={};for(const r of data||[])if(r&&r.data)remote[r.year]=r.data;
-  for(const k in remote){if(!years[k]||(remote[k].updatedAt||0)>=(years[k].updatedAt||0)){years[k]=norm(clone(remote[k]));years[k].year=+k}else dirty.add(+k)}
+  let changed=false;for(const k in remote)if(absorb(k,remote[k]))changed=true;
   for(const k in years)if(!remote[k])dirty.add(+k);
-  saveLocal();try{localStorage.removeItem(LS_KEY)}catch(e){} // guest data now belongs to the account
-  synced=true;ready=true;if(!years[curY]||!view)view=defaultView();
-  setStatus("cloud","Synced to your account");subscribe();render();
+  saveLocal();
+  if(again){if(changed)rerender(curY)}
+  else{try{localStorage.removeItem(LS_KEY)}catch(e){} // guest data now belongs to the account
+    synced=true;ready=true;if(!years[curY]||!view)view=defaultView();subscribe();render()}
+  setStatus("cloud","Synced to your account");
   if(dirty.size){setStatus("saving","Syncing…");flush()}
 }
+/* phones pause background tabs and drop the live connection: catch up whenever the app is looked at again */
+function refresh(){
+  if(mode!=="cloud"||!synced||!user||document.visibilityState!=="visible")return;
+  if(!saving)pull(user,true);
+  if(!chan||chan.state!=="joined")subscribe();
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden"){if(mode==="cloud"&&dirty.size){clearTimeout(timer);flush()}} // save before the phone freezes the tab
+  else refresh()});
+addEventListener("online",()=>{refresh();if(mode==="cloud"&&dirty.size)flush()});
+setInterval(refresh,60000);
 function startCloud(u){
   if(mode==="cloud"&&user&&user.id===u.id){user=u;renderAcct();return} // token refresh etc.
   user=u;mode="cloud";synced=false;dirty.clear();
   try{localStorage.removeItem(GUEST_OK)}catch(e){}
   const guest=readLS(LS_KEY); // anything tracked before signing in moves into the account
-  loadLocal();
+  loadLocal();loadBase();
   for(const k in guest){if(!/^\d{4}$/.test(k))continue;if(!years[k]||(guest[k].updatedAt||0)>(years[k].updatedAt||0)){guest[k].year=+k;years[k]=norm(guest[k])}}
   ready=Object.keys(years).length>0;view=defaultView();
   setStatus("load","Connecting…");renderAcct();render();pull(user);
@@ -785,7 +851,7 @@ async function signIn(){
 async function signOut(){
   clearTimeout(timer);while(saving)await sleep(100);if(dirty.size)await flush();
   if(dirty.size&&!confirm("Some changes haven't reached the cloud yet. Sign out anyway? They'll stay cached in this browser."))return;
-  if(!dirty.size)try{localStorage.removeItem(lsKey())}catch(e){} // don't leave your data on shared computers
+  if(!dirty.size)try{localStorage.removeItem(lsKey());localStorage.removeItem(lsKey()+":base")}catch(e){} // don't leave your data on shared computers
   try{await sb.auth.signOut()}catch(e){}
   showAuth();
 }
