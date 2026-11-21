@@ -54,6 +54,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Real-time sync** between your devices and open tabs
 - **Guest mode**: use it without an account; sign in later and your data moves into your account
 - **Backup and restore** everything as JSON
+- **Light and dark mode**: follows your system setting; switch with the ☀️/🌙 button and it's remembered
 - **Responsive**: works on phones, tablets and desktops
 
 ## 📸 Screenshots
@@ -191,7 +192,7 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 - [ ] Installable app (PWA) with offline support
 - [ ] Daily reminder notifications
 - [ ] Export a month or year as CSV / PDF
-- [ ] Light theme
+- [x] Light and dark theme
 - [ ] Habit categories and colours
 
 Have an idea? [Open an issue](https://github.com/legend0x01/habit-tracker/issues/new/choose).
