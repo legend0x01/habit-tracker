@@ -37,7 +37,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 **Track**
 - **Monthly dashboard**: tick grid for every day, grouped by week, with today highlighted
 - **Quick add**: type a habit under the grid and press Enter; it's trackable immediately
-- **Weekly habits** for things you do once a week (laundry, meal prep, calling family)
+- **Weekly habits** for things you do once a week (laundry, meal prep, calling family); add, rename or delete them right from the month view
 - **Notes** for each month: wins, reflections, plans
 
 **Understand**

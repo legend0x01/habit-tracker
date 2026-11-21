@@ -184,6 +184,12 @@ textarea.notes{width:100%;min-height:220px;background:repeating-linear-gradient(
 .wrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .wcf{display:flex;align-items:center;gap:6px;padding:8px 9px;margin-top:auto;font-size:11px;font-weight:700;color:var(--mu)}
 .wcf .bar{flex:1;min-width:0}
+.wfoot{display:flex;gap:8px;align-items:center;padding:8px 9px;border-top:1px solid var(--ln2)}
+.wfoot form{flex:1;min-width:0}
+.wedit{padding:8px 9px;border-top:1px solid var(--ln2)}
+.wedit .er{display:flex;gap:6px;align-items:center;margin:4px 0}
+.wedit input{flex:1;min-width:0;background:var(--inset);border:1px solid var(--ln);border-radius:6px;padding:6px 9px;font-size:12px;font-weight:600;outline:none}
+.wedit input:focus{border-color:var(--focus)}
 .ringbox{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:8px}
 .ringbox .ring svg{width:120px;height:120px}
 
@@ -551,7 +557,11 @@ function viewMonth(m){
   <div class="panel" style="padding:0;overflow:hidden">${W.act.length?`<div class="wcols" style="--nb:${W.B}">${W.cols.map(c=>`<div class="wcol"><div class="wch" style="background:${WH[c.b]}">${WK[c.b]}</div>
       ${W.act.map(w=>{const on=wChk(y,w.id,m*5+c.b);return`<div class="wrow" data-w="${w.id}" data-k="${m*5+c.b}"><span title="${esc(w.name)}">${esc(w.name)}</span><i class="cb b${c.b}${on?" on":""}"></i></div>`}).join("")}
       <div class="wcf"><div class="bar"><i style="width:${f1(c.p*100)}%;background:${WC[c.b]}"></i></div>${pc(c.p)}</div></div>`).join("")}</div>`
-      :`<div class="empty" style="padding:40px">No weekly habits for ${MONTHS[m]}. Add some in the <b>Planner</b> (things like laundry, meal prep, calling family).</div>`}</div>
+      :`<div class="empty" style="padding:40px 16px">No weekly habits for ${MONTHS[m]} yet. Type one below and press Enter (laundry, meal prep, calling family…).</div>`}
+    ${wEdit&&W.act.length?`<div class="wedit"><div class="hint" style="margin-bottom:4px">Rename a habit by typing over its name. ✕ deletes it from the whole year. Choose which months it's active in the <b>Planner</b>.</div>
+      ${W.act.map(w=>`<div class="er"><input data-f="wname" data-w="${w.id}" value="${esc(w.name)}" maxlength="60" aria-label="Weekly habit name"><button class="ib del" data-act="delw" data-w="${w.id}" title="Delete this weekly habit">✕</button></div>`).join("")}</div>`:""}
+    <div class="wfoot"><form data-f="wquickadd" data-m="${m}" autocomplete="off"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a weekly habit" title="Type a weekly habit (e.g. Laundry) and press Enter" aria-label="Add a weekly habit"></form>
+      ${W.act.length?`<button class="btn sm${wEdit?" pri":""}" data-act="wedit">${wEdit?"Done":"✎ Edit"}</button>`:""}</div></div>
   <div class="panel ringp"><div class="ringbox">${ring(W.p,"Weekly habits progress","#22c55e",true)}</div></div></div>`;
   return h;
 }
@@ -693,6 +703,7 @@ const HAS_UPI=(()=>{let v=String(CFG.upiId||"").trim();if(!v.includes("@"))try{v
 if(HAS_UPI)$("#support").classList.remove("hidden");
 let user=null,mode=SB_ON?"pending":"guest",synced=false,chan=null,saving=false,timer=null,retryT=null,pullT=null;const dirty=new Set();
 
+let wEdit=false; // monthly dashboard: weekly habits edit mode
 /* ---------- theme ---------- */
 function paintThemeBtn(){const l=document.documentElement.dataset.theme==="light",b=$("#themeBtn");b.textContent=l?"🌙":"☀️";b.title=l?"Switch to dark mode":"Switch to light mode";b.setAttribute("aria-label",b.title)}
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("ht-theme",t)}catch(e){}
@@ -848,6 +859,7 @@ document.addEventListener("click",e=>{
       else{b.dataset.armed=1;b.classList.add("armed");b.textContent="Delete?";setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.classList.remove("armed");b.textContent="✕"}},3000)}break;
     case"wm":{const w=Y.weekly.find(w=>w.id===b.dataset.w);const m=+b.dataset.m;w.months[m]=+w.months[m]?0:1;touch();render();break}
     case"backup":openBackup();break;
+    case"wedit":wEdit=!wEdit;render();if(wEdit){const i=document.querySelector(".wedit input");if(i)i.focus({preventScroll:true})}break;
     case"theme":setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");break;
     case"closem":$("#modal").classList.add("hidden");break;
     case"copyjson":{const t=$("#bk");t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("Backup copied"),()=>{try{document.execCommand("copy");toast("Backup copied")}catch(_){toast("Select the text and copy it manually")}});break}
@@ -862,6 +874,18 @@ document.addEventListener("input",e=>{
   else if(f==="note"){Y.notes[+t.dataset.m]=t.value;touch()}
 });
 /* quick add from a month's tracker: the habit starts this month and runs every day from here on */
+document.addEventListener("submit",e=>{
+  const f=e.target;if(f.dataset.f!=="wquickadd")return;e.preventDefault();
+  const Y=years[curY];if(!Y)return;const name=(f.q.value||"").trim();if(!name)return;
+  const m=+f.dataset.m;
+  if(Y.weekly.length>=30){toast("Up to 30 weekly habits");return}
+  const same=Y.weekly.find(w=>w.name.trim().toLowerCase()===name.toLowerCase());
+  if(same&&+same.months[m]){toast(`"${name}" is already on your list`);return}
+  if(same){same.months=same.months.map((v,i)=>i>=m?1:+v)} // re-activate it from this month on
+  else Y.weekly.push({id:uid("w"),name,months:MS.map((_,i)=>i>=m?1:0)});
+  touch();render();toast(`Added "${name}"`);
+  const inp=document.querySelector('form[data-f="wquickadd"] .qa');if(inp)inp.focus({preventScroll:true});
+});
 document.addEventListener("submit",e=>{
   const f=e.target;if(f.dataset.f!=="quickadd")return;e.preventDefault();
   const Y=years[curY];if(!Y)return;const name=(f.q.value||"").trim();if(!name)return;
