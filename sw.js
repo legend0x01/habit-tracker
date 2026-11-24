@@ -1,7 +1,7 @@
 /* Habit Tracker service worker: lets the app install, open offline and show reminder notifications.
    Bump VERSION when the precache list changes. Pages and scripts on this site are fetched network-first,
    so a normal deploy reaches users on their next visit without a version bump. */
-const VERSION = "ht-v3";
+const VERSION = "ht-v4";
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js";
 const PRECACHE = [
   "./", "index.html", "merge.js", "config.js", "manifest.webmanifest",
@@ -50,6 +50,17 @@ self.addEventListener("fetch", e => {
   if (req.url === SUPABASE_JS) { e.respondWith(cacheFirst(req)); return }
   if (url.host === "fonts.googleapis.com" || url.host === "fonts.gstatic.com") { e.respondWith(staleWhileRevalidate(req)); return }
   // everything else (Supabase API, sign-in, avatars) goes straight to the network
+});
+
+/* push reminders from the send-reminders Edge Function: shown even when the app is closed */
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {} } catch (_) { d = { body: e.data ? e.data.text() : "" } }
+  e.waitUntil(self.registration.showNotification(String(d.title || "Habit Tracker"), {
+    body: String(d.body || "Time to check today's habits."),
+    icon: "assets/icon-192.png", badge: "assets/icon-192.png",
+    tag: String(d.tag || "daily-reminder"), renotify: true,
+  }));
 });
 
 /* tapping a reminder opens the app, or focuses it if it's already open */

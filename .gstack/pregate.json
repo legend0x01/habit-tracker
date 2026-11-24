@@ -1,0 +1,23 @@
+{
+  "runner": "node --test {files}",
+  "dependencies": {
+    "supabase/functions/send-reminders/**": [
+      "tests/reminders.test.js"
+    ],
+    "supabase/reminders-cron.sql": [
+      "tests/reminders.test.js"
+    ],
+    "supabase/schema.sql": [
+      "tests/reminders.test.js"
+    ],
+    ".gitignore": [
+      "tests/reminders.test.js"
+    ],
+    "privacy.html": [],
+    "terms.html": [],
+    "support.html": [],
+    "supabase/functions/send-reminders/deno.lock": [
+      "tests/reminders.test.js"
+    ]
+  }
+}

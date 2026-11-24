@@ -955,7 +955,8 @@ async function pull(me,again){ // fetch the cloud copy and merge it with this br
   saveLocal();
   if(again){if(changed)rerender(curY)}
   else{try{localStorage.removeItem(LS_KEY)}catch(e){} // guest data now belongs to the account
-    synced=true;ready=true;if(!years[curY]||!view)view=defaultView();subscribe();render();setTimeout(checkRemind,1500)}
+    synced=true;ready=true;if(!years[curY]||!view)view=defaultView();subscribe();render();setTimeout(checkRemind,1500);
+    setTimeout(()=>{if(user===me)pushSync(false)},2000)} // keeps the server's copy of this device's reminder time and time zone current
   setStatus("cloud","Synced to your account");
   if(dirty.size){setStatus("saving","Syncing…");flush()}
 }
@@ -989,6 +990,7 @@ function showAuth(){
   if(chan){sb.removeChannel(chan);chan=null}
   clearTimeout(timer);clearTimeout(retryT);clearTimeout(pullT);
   user=null;mode="auth";synced=false;dirty.clear();for(const k in years)delete years[k];ready=true;
+  pushOff(); // signed out elsewhere: unsubscribe, and the server drops the row on its next send
   setStatus("load","Not signed in");renderAcct();render();
 }
 async function signIn(){
@@ -1001,6 +1003,7 @@ async function signOut(){
   clearTimeout(timer);while(saving)await sleep(100);if(dirty.size)await flush();
   if(dirty.size&&!confirm("Some changes haven't reached the cloud yet. Sign out anyway? They'll stay cached in this browser."))return;
   if(!dirty.size)try{localStorage.removeItem(lsKey());localStorage.removeItem(lsKey()+":base")}catch(e){} // don't leave your data on shared computers
+  await Promise.race([pushQ,sleep(3000)]);await within(pushOff(),5000).catch(()=>{}); // stop this device getting the signed-out account's reminders (needs the session, so before signing out)
   try{await sb.auth.signOut()}catch(e){}
   showAuth();
 }
@@ -1072,6 +1075,7 @@ function checkRemind(){
   let last=null;try{last=localStorage.getItem(RKEY+"-last")}catch(e){}
   if(last===dayKey())return;
   const left=leftToday();if(left===null)return;
+  if(document.visibilityState!=="visible"&&mode==="cloud"&&pushOn())return; // the server sends it; show what's left when you come back
   try{localStorage.setItem(RKEY+"-last",dayKey())}catch(e){}
   if(!left.length)return; // everything's ticked: no nagging
   const body=remindText(left);
@@ -1079,6 +1083,55 @@ function checkRemind(){
   else notify(body).then(ok=>{if(!ok)toast("⏰ "+body,6000)});
 }
 setInterval(checkRemind,30000);
+
+/* ---------- push reminders: the send-reminders Edge Function sends the reminder even when the app is closed ----------
+   Signed in + reminder on + notifications allowed: this device subscribes to Web Push and saves its endpoint,
+   reminder time and time zone in public.push_subscriptions. Off, sign-out or account deletion removes it.
+   Without vapidPublicKey in config.js (or if the server isn't set up) the in-app reminder above still works. */
+const PKEY="ht-push"; // this device's endpoint, set once the server has it
+const PUSH_OK=SB_ON&&/^[A-Za-z0-9_-]{80,100}$/.test(CFG.vapidPublicKey||"")&&"serviceWorker" in navigator&&"PushManager" in window&&"Notification" in window&&location.protocol!=="file:";
+const pushOn=()=>{try{return PUSH_OK&&!!localStorage.getItem(PKEY)}catch(e){return false}};
+const b64u=s=>Uint8Array.from(atob(s.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-s.length%4)%4)),c=>c.charCodeAt(0));
+const sameKey=(a,b)=>{if(!a)return false;a=new Uint8Array(a);return a.length===b.length&&a.every((v,i)=>v===b[i])};
+let pushQ=Promise.resolve(),pushFail=false;
+const within=(p,ms)=>Promise.race([p,new Promise((_,no)=>setTimeout(()=>no(new Error("timed out")),ms))]); // some browsers never answer a push subscribe
+function pushSync(resetSent){ // queued, so quick toggles can't race each other
+  if(!PUSH_OK)return pushQ;
+  pushQ=pushQ.then(()=>within(pushSync1(resetSent),20000)).then(()=>{pushFail=false},e=>{pushFail=true;console.warn("Push reminder setup failed",e);try{localStorage.removeItem(PKEY)}catch(_){}}).then(paintRemindNote);
+  return pushQ}
+async function pushSync1(resetSent){
+  const r=getRemind(),me=user;
+  if(mode!=="cloud"||!me||!r.on||Notification.permission!=="granted")return pushOff();
+  const reg=await navigator.serviceWorker.ready,key=b64u(CFG.vapidPublicKey);
+  let sub=await reg.pushManager.getSubscription();
+  if(sub&&!sameKey(sub.options&&sub.options.applicationServerKey,key)){await sub.unsubscribe();sub=null} // server keys changed
+  if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+  const save=s=>{const j=s.toJSON(),row={endpoint:j.endpoint,user_id:me.id,p256dh:j.keys.p256dh,auth:j.keys.auth,remind_at:r.time,
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC",updated_at:new Date().toISOString()};
+    if(resetSent)row.last_sent=null; // a new time or a fresh switch-on can remind again today
+    return sb.from("push_subscriptions").upsert(row,{onConflict:"endpoint"})};
+  let{error}=await save(sub);
+  if(error&&error.code==="42501"&&user===me){ // this browser's endpoint still belongs to another account: get a new one
+    await sub.unsubscribe();sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});({error}=await save(sub))}
+  if(user!==me)return;
+  if(error)throw error;
+  try{localStorage.setItem(PKEY,sub.endpoint)}catch(e){}
+}
+async function pushOff(){
+  if(!PUSH_OK)return;
+  let ep=null;try{ep=localStorage.getItem(PKEY);localStorage.removeItem(PKEY)}catch(e){}
+  try{const reg=await navigator.serviceWorker.getRegistration(),sub=reg&&await reg.pushManager.getSubscription();
+    if(sub){ep=ep||sub.endpoint;await sub.unsubscribe()}}catch(e){}
+  if(ep&&mode==="cloud"&&user)try{await sb.from("push_subscriptions").delete().eq("endpoint",ep)}catch(e){}
+}
+function pushNote(){
+  if(!PUSH_OK)return"";
+  if(mode!=="cloud")return"Sign in to get the reminder even when Habit Tracker is closed.";
+  if(pushOn())return"✓ This device gets the reminder even when Habit Tracker is closed.";
+  if(!getRemind().on||Notification.permission!=="granted")return"";
+  return pushFail?"Reminders for when the app is closed aren't available right now; it reminds you while the app is open.":"Setting up reminders for when the app is closed…";
+}
+function paintRemindNote(){const el=$("#rNote");if(el)el.textContent=[remindNote(),pushNote()].filter(Boolean).join(" ")}
 function remindNote(){
   if(!("Notification" in window))return IOS&&!STANDALONE?"On iPhone and iPad, install the app first (Share → Add to Home Screen), open it from the icon, then turn the reminder on there."
     :"This browser can't show notifications, so the reminder shows inside the app instead.";
@@ -1089,12 +1142,13 @@ function remindNote(){
 async function enableRemind(on){
   const r=getRemind();r.on=on;
   if(on&&"Notification" in window&&Notification.permission==="default")try{await Notification.requestPermission()}catch(e){}
-  setRemind(r);const el=$("#rNote");if(el)el.textContent=remindNote();
+  setRemind(r);paintRemindNote();
   if(on)toast(`Reminder set for ${r.time} on this device`);
+  pushSync(true);
 }
 async function testRemind(){
   if("Notification" in window&&Notification.permission==="default")try{await Notification.requestPermission()}catch(e){}
-  const el=$("#rNote");if(el)el.textContent=remindNote();
+  paintRemindNote();
   if(!await notify(remindText(leftToday())+" (test)"))toast("Couldn't show a notification: "+remindNote(),5000);
 }
 function openRemind(){
@@ -1102,8 +1156,9 @@ function openRemind(){
   m.innerHTML=`<div class="mbox"><h3>🔔 Daily reminder</h3>
   <p>A nudge at the time you choose, only on days when some of today's habits aren't ticked yet. Set it separately on each device.</p>
   <div class="rrow"><label><input type="checkbox" id="rOn"${r.on?" checked":""}>Remind me at</label><input type="time" id="rTime" value="${r.time}" aria-label="Reminder time"></div>
-  <p id="rNote" class="hint">${remindNote()}</p><hr>
-  <p><b>When it can remind you:</b> while Habit Tracker is open, minimised or in a background tab. On a computer, keep a tab open. Phones pause apps you aren't using, so on a phone it fires if the app is still running at that time; if you open it later, you'll see what's left right away.</p>
+  <p id="rNote" class="hint">${esc([remindNote(),pushNote()].filter(Boolean).join(" "))}</p><hr>
+  ${PUSH_OK&&mode==="cloud"?`<p><b>When it can remind you:</b> any time, even when Habit Tracker is closed. Your account sends the reminder to this device at the time you chose, in this device's time zone, and skips it when today's habits are already done.</p>`
+    :`<p><b>When it can remind you:</b> while Habit Tracker is open, minimised or in a background tab. On a computer, keep a tab open. Phones pause apps you aren't using, so on a phone it fires if the app is still running at that time; if you open it later, you'll see what's left right away.${PUSH_OK?" <b>Sign in</b> and it works even when the app is closed.":""}</p>`}
   <div class="row"><button class="btn" data-act="rtest">Send a test</button><span style="flex:1"></span><button class="btn pri" data-act="closem">Done</button></div></div>`;
 }
 
@@ -1267,6 +1322,7 @@ document.addEventListener("change",e=>{
   if(t.dataset.f==="hcat"){const h=findH(t.dataset.h);if(h){h.cat=t.value;touch();render()}}
   if(t.id==="rOn")enableRemind(t.checked);
   if(t.id==="rTime"&&/^\d\d:\d\d$/.test(t.value)){const r=getRemind();r.time=t.value;setRemind(r);try{localStorage.removeItem(RKEY+"-last")}catch(e){}
+    pushSync(true);
     if(r.on)toast(`Reminder moved to ${r.time}`)}
   if(t.dataset.f==="hgoal"){const v=Math.max(0,Math.min(+t.max,parseInt(t.value,10)||0));t.value=v}
 });
@@ -1294,6 +1350,7 @@ async function deleteAccount(){
     btn.textContent="Delete my account";btn.disabled=$("#delc").value.trim()!=="DELETE";
     if(dirty.size)flush();return}
   try{localStorage.removeItem(key);localStorage.removeItem(key+":base")}catch(e){} // no copy left on this device either
+  await within(pushOff(),5000).catch(()=>{}); // the server's rows went with the account; unsubscribe this browser too
   try{await sb.auth.signOut({scope:"local"})}catch(e){}
   deleting=false;$("#modal").classList.add("hidden");showAuth();
   toast("Your account and all of its habit data have been deleted.",6000);
