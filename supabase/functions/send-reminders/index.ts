@@ -11,7 +11,8 @@
    the function checks CRON_SECRET itself. */
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import * as webpush from "jsr:@negrel/webpush@0.5.0";
-import { isDue, leftToday, localNow, pushHostOk, reminderText, sameSecret } from "./logic.mjs";
+import { isDue, localNow, pushHostOk, sameSecret, todayStatus } from "./logic.mjs";
+import { reminderMessage } from "./copy.mjs";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -63,14 +64,16 @@ Deno.serve(async (req) => {
         .eq("user_id", s.user_id).eq("year", t.y).maybeSingle();
       years.set(key, row?.data ?? null);
     }
-    const left = leftToday(years.get(key), t.y, t.m, t.d);
-    if (!left || !left.length) { out.allDone++; continue } // everything's ticked: no nagging
+    const today = todayStatus(years.get(key), t.y, t.m, t.d);
+    if (!today || !today.left.length) { out.allDone++; continue } // everything's ticked: no nagging
+    // a playful, habit-aware line that rotates daily; the seed keeps a user's devices from all saying the same thing
+    const msg = reminderMessage({ ...today, day: t.day, seed: s.endpoint.slice(-16), hour: t.hh });
 
     if (!pushHostOk(s.endpoint)) { await forget(s.endpoint); out.removed++; continue }
     try {
       const sub = (await appServer()).subscribe({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } });
       await sub.pushTextMessage(
-        JSON.stringify({ title: "Habit Tracker", body: reminderText(left), tag: "daily-reminder" }),
+        JSON.stringify({ title: msg.title, body: msg.body, tag: "daily-reminder" }),
         { ttl: 4 * 3600, urgency: webpush.Urgency.Normal }, // an evening reminder is pointless the next morning
       );
       out.sent++;

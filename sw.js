@@ -1,10 +1,11 @@
 /* Habit Tracker service worker: lets the app install, open offline and show reminder notifications.
    Bump VERSION when the precache list changes. Pages and scripts on this site are fetched network-first,
    so a normal deploy reaches users on their next visit without a version bump. */
-const VERSION = "ht-v4";
+const VERSION = "ht-v5";
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js";
 const PRECACHE = [
   "./", "index.html", "merge.js", "config.js", "manifest.webmanifest",
+  "supabase/functions/send-reminders/copy.mjs", // reminder wording, loaded by the page
   "assets/logo-512.png", "assets/icon-192.png", "assets/icon-maskable-512.png", "assets/apple-touch-icon.png",
   "privacy.html", "terms.html", "support.html",
   SUPABASE_JS, // without it a signed-in user would open offline as a guest

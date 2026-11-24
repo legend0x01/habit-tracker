@@ -2,7 +2,8 @@
   "runner": "node --test {files}",
   "dependencies": {
     "supabase/functions/send-reminders/**": [
-      "tests/reminders.test.js"
+      "tests/reminders.test.js",
+      "tests/copy.test.js"
     ],
     "supabase/reminders-cron.sql": [
       "tests/reminders.test.js"

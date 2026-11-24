@@ -1062,11 +1062,22 @@ function remindText(left){
   const names=left.slice(0,3).map(h=>h.name.trim()||"Untitled").join(", ");
   return left.length===1?`"${names}" is still open today.`:`${left.length} habits still open today: ${names}${left.length>3?"…":""}`;
 }
-async function notify(body){
+/* playful, habit-aware wording (shared with the push server); plain wording until it loads or if it can't */
+let COPY=null;
+import("./supabase/functions/send-reminders/copy.mjs").then(m=>{COPY=m}).catch(e=>console.warn("Reminder copy not loaded",e));
+function deviceSeed(){ // the push server seeds with the end of the endpoint, so this device sees the same line in-app
+  try{const ep=localStorage.getItem(PKEY);if(ep)return ep.slice(-16);let s=localStorage.getItem("ht-seed");if(!s){s=uid("s");localStorage.setItem("ht-seed",s)}return s}catch(e){return""}}
+function remindMsg(left){
+  if(!COPY)return{title:"Habit Tracker",body:remindText(left)};
+  const n=now();
+  return COPY.reminderMessage({left,total:habitsIn(n.y,n.m).length,streakOf:h=>streak(n.y,h.id,n.m,n.d),
+    day:`${n.y}-${String(n.m+1).padStart(2,"0")}-${String(n.d).padStart(2,"0")}`,seed:deviceSeed(),hour:new Date().getHours()});
+}
+async function notify({title,body}){
   if(!("Notification" in window)||Notification.permission!=="granted")return false;
   const opts={body,icon:"assets/icon-192.png",badge:"assets/icon-192.png",tag:"daily-reminder",renotify:true};
-  try{const reg=swReg||await navigator.serviceWorker?.getRegistration();if(reg){await reg.showNotification("Habit Tracker",opts);return true}}catch(e){}
-  try{new Notification("Habit Tracker",opts);return true}catch(e){return false} // Android only allows the service-worker route
+  try{const reg=swReg||await navigator.serviceWorker?.getRegistration();if(reg){await reg.showNotification(title,opts);return true}}catch(e){}
+  try{new Notification(title,opts);return true}catch(e){return false} // Android only allows the service-worker route
 }
 function checkRemind(){
   const r=getRemind();if(!r.on||!ready||mode==="auth"||(mode==="cloud"&&!synced))return; // wait for the cloud copy so ticks from other devices count
@@ -1078,9 +1089,9 @@ function checkRemind(){
   if(document.visibilityState!=="visible"&&mode==="cloud"&&pushOn())return; // the server sends it; show what's left when you come back
   try{localStorage.setItem(RKEY+"-last",dayKey())}catch(e){}
   if(!left.length)return; // everything's ticked: no nagging
-  const body=remindText(left);
-  if(document.visibilityState==="visible")toast("⏰ "+body,6000); // you're looking at the app already
-  else notify(body).then(ok=>{if(!ok)toast("⏰ "+body,6000)});
+  const msg=remindMsg(left),txt=`${msg.title} ${msg.body}`;
+  if(document.visibilityState==="visible")toast(txt,6000); // you're looking at the app already
+  else notify(msg).then(ok=>{if(!ok)toast(txt,6000)});
 }
 setInterval(checkRemind,30000);
 
@@ -1149,7 +1160,8 @@ async function enableRemind(on){
 async function testRemind(){
   if("Notification" in window&&Notification.permission==="default")try{await Notification.requestPermission()}catch(e){}
   paintRemindNote();
-  if(!await notify(remindText(leftToday())+" (test)"))toast("Couldn't show a notification: "+remindNote(),5000);
+  const left=leftToday()||[],msg=remindMsg(left);
+  if(!await notify({title:msg.title,body:msg.body+(left.length?"":" (test)")}))toast("Couldn't show a notification: "+remindNote(),5000);
 }
 function openRemind(){
   const r=getRemind(),m=$("#modal");m.classList.remove("hidden");

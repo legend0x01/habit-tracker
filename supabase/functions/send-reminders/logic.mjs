@@ -37,6 +37,24 @@ export function leftToday(data, y, m, d) {
     String(checks[h.id] || "").charCodeAt(i) !== 49);
 }
 
+/* everything the reminder copy needs about today: unticked habits, how many are active, and each habit's
+   streak up to yesterday (restarting on the 1st when the year's "carry streaks" setting is off) */
+export function todayStatus(data, y, m, d) {
+  const left = leftToday(data, y, m, d);
+  if (!left) return null;
+  const i = Math.round((Date.UTC(y, m, d) - Date.UTC(y, 0, 1)) / 864e5);
+  const lo = data.carry === false ? Math.round((Date.UTC(y, m, 1) - Date.UTC(y, 0, 1)) / 864e5) : 0;
+  const checks = data.checks && typeof data.checks === "object" ? data.checks : {};
+  const total = data.habits.filter(h => h && Array.isArray(h.goals) && (+h.goals[m] || 0) > 0).length;
+  const streakOf = h => {
+    const s = String(checks[h.id] || "");
+    let n = 0;
+    for (let k = i - 1; k >= lo && s.charCodeAt(k) === 49; k--) n++;
+    return n;
+  };
+  return { left, total, streakOf };
+}
+
 export function reminderText(left) {
   const names = left.slice(0, 3).map(h => String(h.name || "").trim() || "Untitled").join(", ");
   return left.length === 1 ? `"${names}" is still open today.`
