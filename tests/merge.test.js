@@ -75,6 +75,31 @@ test("mergeYear(): weekly habits and notes merge per month", () => {
   assert.equal(M.wchecks.w1, "10001");
 });
 
+test("mergeBits(): weekly counts merge week by week", () => {
+  assert.equal(mergeBits("000", "200", "001"), "201", "count raised here, another week ticked there");
+  assert.equal(mergeBits("300", "300", "100"), "100", "a lowered count on the other device survives");
+  assert.equal(mergeBits(null, "210", "120"), "220", "no history: keep the higher count");
+});
+
+test("mergeYear(): weekly goals merge week by week; old copies without goals mean 1 a week", () => {
+  const goals = (v, over = {}) => { const g = Array(60).fill(v); for (const k in over) g[k] = over[k]; return g };
+  const B = year({ weekly: [{ ...weekly("w1", "Gym"), goals: goals(1) }] });
+  const L = copy(B); L.weekly[0].goals = goals(1, { 46: 3 });               // only Week 2 of Oct, this device
+  const R = copy(B); R.weekly[0].goals = goals(1, { 50: 2, 51: 2, 52: 2 }); // November onward, other device
+  const M = mergeYear(B, L, R);
+  assert.equal(M.weekly[0].goals[46], 3);
+  assert.deepEqual(M.weekly[0].goals.slice(50, 53), [2, 2, 2]);
+  assert.equal(M.weekly[0].goals[0], 1);
+
+  const Bold = year({ weekly: [weekly("w1", "Gym")] }); // saved before weekly goals existed
+  const Lnew = copy(Bold); Lnew.weekly[0].goals = goals(1, { 10: 4 });
+  const Rold = copy(Bold); Rold.weekly[0].name = "Gym session";
+  const M2 = mergeYear(Bold, Lnew, Rold);
+  assert.equal(M2.weekly[0].goals[10], 4, "this device's goal survives a merge with a copy that has no goals");
+  assert.equal(M2.weekly[0].goals.length, 60);
+  assert.equal(M2.weekly[0].name, "Gym session");
+});
+
 test("mergeYear(): category edits from both devices survive", () => {
   const B = year({ cats: [{ id: "c1", name: "Health", col: "#22c55e" }], habits: [habit("h1", "Run")] });
   const L = copy(B); L.habits[0].cat = "c1";

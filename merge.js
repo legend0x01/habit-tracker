@@ -14,9 +14,9 @@ function pick(b,l,r,text){ // one value: whichever side changed it wins; if both
   if(same(l,r))return l;
   if(b!=null){if(same(l,b))return r;return l}
   return text?(String(r||"").length>=String(l||"").length?r:l):r} // no shared history: trust the cloud (longer note)
-function mergeBits(b,l,r){ // '0'/'1' tick strings, merged day by day
+function mergeBits(b,l,r){ // tick strings, one digit per day ('0'/'1') or per week (count done, '0'-'9'), merged slot by slot
   l=l||"";r=r||"";const n=Math.max(l.length,r.length);l=l.padEnd(n,"0");r=r.padEnd(n,"0");let s="";
-  if(b==null){for(let i=0;i<n;i++)s+=l[i]==="1"||r[i]==="1"?"1":"0";return s} // no history: keep every tick
+  if(b==null){for(let i=0;i<n;i++)s+=l[i]>r[i]?l[i]:r[i];return s} // no history: keep every tick (the higher count)
   b=b.padEnd(n,"0");for(let i=0;i<n;i++)s+=l[i]!==b[i]?l[i]:r[i];return s}
 function mergeBitsMap(b,l,r,keep){const o={};for(const k of new Set([...Object.keys(l),...Object.keys(r)]))if(keep.has(k))o[k]=mergeBits(b?b[k]??null:null,l[k],r[k]);return o}
 function mergeList(b,l,r,fn){ // habit lists, matched by id
@@ -27,19 +27,23 @@ function mergeList(b,l,r,fn){ // habit lists, matched by id
   r.forEach((y,i)=>{if(lm.has(y.id))return;const bx=bm.get(y.id);if(bx&&same(y,bx))return; // deleted here
     out.splice(Math.min(i,out.length),0,y)}); // added on another device
   return out}
+/* weekly habit targets: times per week, one slot per week (month*5 + week, 60 slots); missing = 1 a week */
+const WSLOTS=60;
+const wGoals=w=>Array.isArray(w&&w.goals)&&w.goals.length===WSLOTS?w.goals:Array(WSLOTS).fill(1);
 function mergeYear(B,L,R){
   const o={...R,...L};
   o.carry=pick(B&&B.carry,L.carry,R.carry);
   // a base habit/category saved before categories existed has no cat/col field: treat it as "" so it still counts as shared history
   o.cats=mergeList(B&&B.cats,L.cats||[],R.cats||[],(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),col:pick(b?b.col??"":null,l.col,r.col)}));
   o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),cat:pick(b?b.cat??"":null,l.cat??"",r.cat??""),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i]))}));
-  o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i]))}));
+  o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i])),
+    goals:((bg,rg)=>wGoals(l).map((v,i)=>pick(bg&&bg[i],v,rg[i])))(b?wGoals(b):null,wGoals(r))}));
   o.checks=mergeBitsMap(B&&B.checks,L.checks,R.checks,new Set(o.habits.map(h=>h.id)));
   o.wchecks=mergeBitsMap(B&&B.wchecks,L.wchecks,R.wchecks,new Set(o.weekly.map(w=>w.id)));
   o.notes=L.notes.map((t,i)=>pick(B&&B.notes&&B.notes[i],t,R.notes[i],true));
   o.updatedAt=Math.max(L.updatedAt||0,R.updatedAt||0);
   return o}
 
-const api={isObj,same,sameY,pick,mergeBits,mergeBitsMap,mergeList,mergeYear};
+const api={isObj,same,sameY,pick,mergeBits,mergeBitsMap,mergeList,mergeYear,WSLOTS,wGoals};
 if(typeof module==="object"&&module.exports)module.exports=api;else Object.assign(root,api);
 })(typeof globalThis!=="undefined"?globalThis:this);
