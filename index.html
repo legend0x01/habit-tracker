@@ -288,6 +288,41 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
 .chip:hover{border-style:solid;border-color:var(--bd)}
 .plan select{background:var(--inset);border:1px solid var(--ln);border-radius:5px;padding:4px 6px;font-size:11.5px;font-weight:600;max-width:140px;outline:none}
 .plan select:focus{border-color:var(--focus)}
+/* ---------- today ---------- */
+.tday{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.tdh{display:flex;align-items:center;gap:8px;padding:8px}
+.tdt{flex:1;text-align:center}
+.tdl{font-size:22px;font-weight:700}
+.tds{color:var(--mu);font-size:12px;font-weight:600;margin-top:2px}
+.tnav{font-size:26px;width:46px;height:46px;border-radius:10px;line-height:1}
+.tnav:disabled{opacity:.2;cursor:default;background:none}
+.tsum{display:flex;align-items:center;gap:14px}
+.tbig{font-size:30px;font-weight:700;white-space:nowrap}
+.tbig small{font-size:15px;color:var(--mu)}
+.tsum .bar{flex:1;height:12px;border-radius:6px}
+.tsum .bar>i{border-radius:6px;transition:width .3s}
+.tmsg{font-size:12px;font-weight:700;color:var(--mu);white-space:nowrap}
+.tlist{display:flex;flex-direction:column;gap:6px}
+.tgh{display:flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx2);margin:10px 2px 2px}
+.tgh:first-child{margin-top:0}
+.tgh span{margin-left:auto;color:var(--mu);letter-spacing:.4px}
+.tk{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:10px 14px;background:var(--inset);border:1px solid var(--ln);border-radius:10px;text-align:left;font-size:14px;font-weight:600;transition:background .12s,border-color .12s;-webkit-tap-highlight-color:transparent}
+.tk:hover{border-color:var(--bd)}
+.tk:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.tk .cb{width:22px;height:22px;border-radius:6px;flex:none;opacity:1}
+.tk .cb.on::after{left:6px;top:2px;width:6px;height:11px}
+.tk .tn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk.on{background:color-mix(in srgb,var(--bc) 13%,var(--p));border-color:color-mix(in srgb,var(--bc) 35%,var(--ln))}
+.tk.on .tn{color:var(--mu)}
+.tk .fire{font-size:12px;font-weight:700;white-space:nowrap}
+.tfoot{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:2px 0 8px}
+/* ---------- account ---------- */
+.acctb{display:flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;border-radius:8px}
+.acctb:hover{background:var(--p2)}
+.dinp{flex:1;min-width:160px;background:var(--inset);border:1px solid var(--ln);border-radius:7px;padding:8px 10px;font-size:12px;font-weight:600;outline:none}
+.dinp:focus{border-color:var(--danger)}
+.btn.danger:not(:disabled){border-color:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 /* ---------- reminders ---------- */
 .rrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
 .rrow label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;cursor:pointer}
@@ -341,6 +376,7 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
 <div id="modal" class="modal hidden"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="merge.js"></script>
 <script src="config.js"></script>
 <script>
 /* ================= constants & helpers ================= */
@@ -393,44 +429,9 @@ function saveLocal(){try{localStorage.setItem(lsKey(),JSON.stringify({years}));i
 let base={};
 function loadBase(){base={};try{const o=JSON.parse(localStorage.getItem(lsKey()+":base")||"null");if(o&&typeof o==="object")base=o}catch(e){}}
 
-/* ---------- three-way merge ---------- */
-const isObj=v=>v&&typeof v==="object"&&!Array.isArray(v);
-function same(a,b){ // deep equality that ignores key order (Postgres jsonb reorders keys)
-  if(a===b)return true;
-  if(Array.isArray(a)){if(!Array.isArray(b)||a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(!same(a[i],b[i]))return false;return true}
-  if(isObj(a)&&isObj(b)){const ka=Object.keys(a);if(ka.length!==Object.keys(b).length)return false;for(const k of ka)if(!(k in b)||!same(a[k],b[k]))return false;return true}
-  return false}
-const sameY=(a,b)=>same({...a,updatedAt:0},{...b,updatedAt:0});
-function pick(b,l,r,text){ // one value: whichever side changed it wins; if both did, this device wins
-  if(same(l,r))return l;
-  if(b!=null){if(same(l,b))return r;return l}
-  return text?(String(r||"").length>=String(l||"").length?r:l):r} // no shared history: trust the cloud (longer note)
-function mergeBits(b,l,r){ // '0'/'1' tick strings, merged day by day
-  l=l||"";r=r||"";const n=Math.max(l.length,r.length);l=l.padEnd(n,"0");r=r.padEnd(n,"0");let s="";
-  if(b==null){for(let i=0;i<n;i++)s+=l[i]==="1"||r[i]==="1"?"1":"0";return s} // no history: keep every tick
-  b=b.padEnd(n,"0");for(let i=0;i<n;i++)s+=l[i]!==b[i]?l[i]:r[i];return s}
-function mergeBitsMap(b,l,r,keep){const o={};for(const k of new Set([...Object.keys(l),...Object.keys(r)]))if(keep.has(k))o[k]=mergeBits(b?b[k]??null:null,l[k],r[k]);return o}
-function mergeList(b,l,r,fn){ // habit lists, matched by id
-  const bm=new Map((b||[]).map(x=>[x.id,x])),rm=new Map(r.map(x=>[x.id,x])),lm=new Set(l.map(x=>x.id)),out=[];
-  for(const x of l){const y=rm.get(x.id);
-    if(y)out.push(fn(bm.get(x.id),x,y));
-    else if(!bm.has(x.id)||!same(x,bm.get(x.id)))out.push(x)} // added here (or edited here after the other device deleted it)
-  r.forEach((y,i)=>{if(lm.has(y.id))return;const bx=bm.get(y.id);if(bx&&same(y,bx))return; // deleted here
-    out.splice(Math.min(i,out.length),0,y)}); // added on another device
-  return out}
-function mergeYear(B,L,R){
-  const o={...R,...L};
-  o.carry=pick(B&&B.carry,L.carry,R.carry);
-  // a base habit/category saved before categories existed has no cat/col field: treat it as "" so it still counts as shared history
-  o.cats=mergeList(B&&B.cats,L.cats||[],R.cats||[],(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),col:pick(b?b.col??"":null,l.col,r.col)}));
-  o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),cat:pick(b?b.cat??"":null,l.cat??"",r.cat??""),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i]))}));
-  o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i]))}));
-  o.checks=mergeBitsMap(B&&B.checks,L.checks,R.checks,new Set(o.habits.map(h=>h.id)));
-  o.wchecks=mergeBitsMap(B&&B.wchecks,L.wchecks,R.wchecks,new Set(o.weekly.map(w=>w.id)));
-  o.notes=L.notes.map((t,i)=>pick(B&&B.notes&&B.notes[i],t,R.notes[i],true));
-  o.updatedAt=Math.max(L.updatedAt||0,R.updatedAt||0);
-  return o}
-function defaultView(){const n=now();return curY===n.y?"m"+n.m:"planner"}
+/* three-way merge (same, sameY, pick, mergeYear…) lives in merge.js */
+const narrow=()=>matchMedia("(max-width:760px)").matches;
+function defaultView(){const n=now();return curY===n.y?(narrow()?"today":"m"+n.m):"planner"} // phones open on the Today checklist
 
 function norm(Y){ // make sure a year object has every field
   Y.habits=Array.isArray(Y.habits)?Y.habits:[];Y.weekly=Array.isArray(Y.weekly)?Y.weekly:[];
@@ -667,6 +668,35 @@ function viewMonth(m){
   return h;
 }
 
+/* Today: one-tap checklist for a single day (today by default; ‹ › steps back through this year) */
+function viewToday(){
+  const y=curY,Y=years[y],n=now(),ti=doy(n.y,n.m,n.d),i=tday==null?ti:Math.max(0,Math.min(ti,tday));
+  const dt=new Date(y,0,1+i),m=dt.getMonth(),d=dt.getDate(),b=bk(d);
+  const rows=habitsIn(y,m).map(h=>({h,on:isChk(y,h.id,i),st:streak(y,h.id,m,d)}));
+  const done=rows.filter(r=>r.on).length,tot=rows.length,p=tot?done/tot:0;
+  const label=i===ti?"Today":i===ti-1?"Yesterday":dt.toLocaleDateString(undefined,{weekday:"long"});
+  const msg=!tot?"":done===tot?"All done 🎉":`${tot-done} to go`;
+  let h=`<div class="tday"><div class="panel tdh">
+    <button class="ib tnav" data-act="tday" data-d="-1"${i>0?"":" disabled"} aria-label="Previous day" title="Previous day">‹</button>
+    <div class="tdt"><div class="tdl">${label}</div><div class="tds">${dt.toLocaleDateString(undefined,{weekday:"long"})}, ${d} ${MONTHS[m]}</div></div>
+    <button class="ib tnav" data-act="tday" data-d="1"${i<ti?"":" disabled"} aria-label="Next day" title="Next day">›</button></div>`;
+  h+=`<div class="panel tsum"><div class="tbig">${done}<small> / ${tot}</small></div><div class="bar" role="progressbar" aria-valuenow="${Math.round(p*100)}" aria-valuemin="0" aria-valuemax="100" aria-label="Habits done"><i style="width:${f1(p*100)}%;background:${pcol(p)}"></i></div><div class="tmsg">${msg}</div></div>`;
+  h+=`<div class="panel"><div class="tlist">`;
+  const groups=catGroups(Y,rows),showG=groups.some(g=>g.c);
+  for(const g of groups){
+    if(showG)h+=`<div class="tgh"><i class="cdot" style="--cc:${g.c?g.c.col:"var(--dim)"}"></i>${esc(g.c?g.c.name||"Untitled":"Other")}<span>${g.rows.filter(r=>r.on).length}/${g.rows.length}</span></div>`;
+    for(const r of g.rows)h+=`<button class="tk${r.on?" on":""}" style="--bc:${g.c?g.c.col:"#22c06e"}" data-h="${r.h.id}" data-i="${i}" aria-pressed="${r.on}"><i class="cb${r.on?" on":""}"></i><span class="tn">${esc(r.h.name||"Untitled")}</span>${r.st?`<span class="fire">🔥 ${r.st}</span>`:""}</button>`;
+  }
+  if(!tot)h+=`<div class="empty">No daily habits for ${MONTHS[m]} yet. Add one below.</div>`;
+  h+=`</div><form data-f="quickadd" data-m="${m}" autocomplete="off" style="margin-top:10px"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a habit" aria-label="Add a daily habit"></form></div>`;
+  const wk=weeklyIn(y,m),k=m*5+b;
+  if(wk.length){const wd=wk.filter(w=>wChk(y,w.id,k)).length;
+    h+=`<div class="panel"><div class="tgh" style="margin-top:0">${WK[b]} · weekly habits<span>${wd}/${wk.length}</span></div><div class="tlist">${wk.map(w=>{const on=wChk(y,w.id,k);
+      return`<button class="tk${on?" on":""}" style="--bc:${WC[b]}" data-w="${w.id}" data-k="${k}" aria-pressed="${on}"><i class="cb${on?" on":""}"></i><span class="tn">${esc(w.name||"Untitled")}</span></button>`}).join("")}</div></div>`}
+  h+=`<div class="tfoot"><button class="btn" data-act="tab" data-v="m${m}">${MONTHS[m]} dashboard →</button></div></div>`;
+  return h;
+}
+
 function viewAnnual(){
   const y=curY,Y=years[y],n=now(),ms=MS.map((_,m)=>monthStats(y,m)),ws=MS.map((_,m)=>wStats(y,m));
   const goal=sum(ms.map(s=>s.goal)),done=sum(ms.map(s=>s.done)),rem=Math.max(0,goal-done);
@@ -782,7 +812,7 @@ function viewPlanner(){
 function renderTabs(){
   const n=now(),el=$("#tabs");
   if(!ready||!years[curY]||mode==="auth"||mode==="pending"){el.innerHTML="";return}
-  const items=[["planner","Planner","#7a5ff8"],...MS.map((m,i)=>["m"+i,m,QC[Math.floor(i/3)]]),["annual","Annual","#22c55e"]];
+  const items=[...(curY===n.y?[["today","Today","#f0476a"]]:[]),["planner","Planner","#7a5ff8"],...MS.map((m,i)=>["m"+i,m,QC[Math.floor(i/3)]]),["annual","Annual","#22c55e"]];
   el.innerHTML=items.map(([v,l,c])=>`<button class="tab${view===v?" on":""}${curY===n.y&&v==="m"+n.m?" now":""}" style="--tc:${c}" data-act="tab" data-v="${v}">${l}</button>`).join("");
 }
 function renderYearSel(){
@@ -798,7 +828,8 @@ function render(){
   if(!ready||mode==="pending"){app.innerHTML=`<div class="loading"><div class="spin"></div>Loading your tracker…</div>`;return}
   const Y=years[curY];
   if(!Y)app.innerHTML=viewSetup();
-  else{norm(Y);app.innerHTML=view==="planner"?viewPlanner():view==="annual"?viewAnnual():viewMonth(+view.slice(1)||0)}
+  else{norm(Y);if(view==="today"&&curY!==now().y)view=defaultView();
+    app.innerHTML=view==="planner"?viewPlanner():view==="annual"?viewAnnual():view==="today"?viewToday():viewMonth(+view.slice(1)||0)}
   const els=[...document.querySelectorAll(".sx,.wcols")];
   if(els.length===sc.length)els.forEach((e,i)=>e.scrollLeft=sc[i]);
   else scrollToToday();
@@ -823,6 +854,8 @@ if(HAS_UPI)$("#support").classList.remove("hidden");
 let user=null,mode=SB_ON?"pending":"guest",synced=false,chan=null,saving=false,timer=null,retryT=null,pullT=null;const dirty=new Set();
 
 let wEdit=false; // monthly dashboard: weekly habits edit mode
+let tday=null; // Today view: day-of-year being shown, null = today
+let deleting=false; // account deletion in progress: hold back cloud saves
 /* ---------- theme ---------- */
 function paintThemeBtn(){const l=document.documentElement.dataset.theme==="light",b=$("#themeBtn");b.textContent=l?"🌙":"☀️";b.title=l?"Switch to dark mode":"Switch to light mode";b.setAttribute("aria-label",b.title)}
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("ht-theme",t)}catch(e){}
@@ -852,7 +885,7 @@ async function writeYear(y){
   base[y]=snap;saveLocal();
 }
 async function flush(){
-  if(saving||mode!=="cloud"||!synced)return;saving=true;clearTimeout(retryT);
+  if(saving||deleting||mode!=="cloud"||!synced)return;saving=true;clearTimeout(retryT);
   const me=user;let failed=null;
   while(dirty.size&&user===me){const y=[...dirty][0];dirty.delete(y);
     try{await writeYear(y)}catch(e){dirty.add(y);failed=e;break}}
@@ -937,7 +970,7 @@ async function signOut(){
 function renderAcct(){
   const el=$("#acct");
   if(mode==="cloud"&&user){const md=user.user_metadata||{},name=md.full_name||md.name||user.email||"Account",pic=md.avatar_url||md.picture;
-    el.innerHTML=`${pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${esc(name[0].toUpperCase())}</span>`}<span class="nm" title="${esc(user.email||"")}">${esc(name)}</span><button class="btn sm ghost" data-act="signout">Sign out</button>`}
+    el.innerHTML=`<button class="acctb" data-act="backup" title="${esc(user.email||"")}: backup and account">${pic?`<img src="${esc(pic)}" alt="" referrerpolicy="no-referrer">`:`<span class="av">${esc(name[0].toUpperCase())}</span>`}<span class="nm">${esc(name)}</span></button><button class="btn sm ghost" data-act="signout">Sign out</button>`}
   else if(mode==="guest"&&SB_ON)el.innerHTML=`<button class="btn sm pri" data-act="signin">Sign in</button>`;
   else el.innerHTML="";
 }
@@ -1050,7 +1083,7 @@ function makeYear(y,mode,from){
   else if(mode==="starter"){const ck={};cats=STARTER_C.map(([k,name,col])=>{const c={id:uid("c"),name,col};ck[k]=c.id;return c});
     habits=STARTER.map(([name,g,k])=>({id:uid("h"),name,cat:ck[k]||"",goals:G(m=>g==="all"?dim(y,m):Math.min(g,dim(y,m)))}));weekly=STARTER_W.map(name=>({id:uid("w"),name,months:G(()=>1)}))}
   years[y]={v:1,year:y,carry,cats,habits,weekly,checks:{},wchecks:{},notes:Array(12).fill(""),updatedAt:Date.now()};
-  touch(y);view=y===n.y?"m"+n.m:"planner";if(!habits.length)view="planner";render();
+  touch(y);view=y===n.y?(narrow()?"today":"m"+n.m):"planner";if(!habits.length)view="planner";render();
   toast(mode==="copy"?`${y} is ready — habits carried over from ${from}`:`${y} is ready`);
 }
 function findH(id){return years[curY].habits.find(h=>h.id===id)}
@@ -1060,19 +1093,22 @@ function updPlanTotals(){const Y=years[curY];const mt=MS.map((_,m)=>sum(Y.habits
   const pcEl=$("#pchart");if(pcEl)pcEl.innerHTML=barChart(mt.map((v,m)=>({v,col:QC[Math.floor(m/3)],lab:MS[m],top:v})),{H:220,W:1100});}
 
 document.addEventListener("click",e=>{
-  const cell=e.target.closest("td.c[data-h]");
-  if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h;setChk(y,hid,i,!isChk(y,hid,i));touch();render();return}
-  const wr=e.target.closest(".wrow[data-w]");
+  const cell=e.target.closest("td.c[data-h],.tk[data-h]");
+  if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h;setChk(y,hid,i,!isChk(y,hid,i));touch();render();
+    if(cell.classList.contains("tk"))document.querySelector(`.tk[data-h="${hid}"]`)?.focus({preventScroll:true});return} // keep keyboard focus on the row
+  const wr=e.target.closest(".wrow[data-w],.tk[data-w]");
   if(wr){const k=+wr.dataset.k;setW(curY,wr.dataset.w,k,!wChk(curY,wr.dataset.w,k));touch();render();return}
   const b=e.target.closest("[data-act]");if(!b)return;
   const act=b.dataset.act,Y=years[curY],n=now();
   if(b.tagName==="A")e.preventDefault();
   switch(act){
-    case"tab":view=b.dataset.v;render();scrollTo(0,0);if(view[0]==="m")scrollToToday();break;
+    case"tab":view=b.dataset.v;if(view==="today")tday=null;render();scrollTo(0,0);if(view[0]==="m")scrollToToday();break;
+    case"tday":{const ti=doy(n.y,n.m,n.d),j=Math.max(0,Math.min(ti,(tday??ti)+ +b.dataset.d));tday=j===ti?null:j;render();break}
+    case"delacct":deleteAccount();break;
     case"yprev":setYear(curY-1);break;
     case"ynext":setYear(curY+1);break;
     case"goy":setYear(+b.dataset.y);break;
-    case"today":curY=n.y;view="m"+n.m;render();scrollToToday();break;
+    case"today":curY=n.y;tday=null;view=narrow()?"today":"m"+n.m;render();scrollToToday();break;
     case"signin":signIn();break;
     case"signout":signOut();break;
     case"guest":try{localStorage.setItem(GUEST_OK,"1")}catch(_){}startGuest();break;
@@ -1105,7 +1141,9 @@ document.addEventListener("click",e=>{
   }
 });
 document.addEventListener("input",e=>{
-  const t=e.target,f=t.dataset.f;if(!f||!years[curY])return;const Y=years[curY];
+  const t=e.target,f=t.dataset.f;
+  if(t.id==="delc"){$("#delb").disabled=t.value.trim()!=="DELETE";return}
+  if(!f||!years[curY])return;const Y=years[curY];
   if(f==="hname"){const h=findH(t.dataset.h);if(h){h.name=t.value;touch()}}
   else if(f==="hgoal"){const h=findH(t.dataset.h),m=+t.dataset.m;if(!h)return;let v=parseInt(t.value,10);if(isNaN(v))v=0;v=Math.max(0,Math.min(dim(curY,m),v));h.goals[m]=v;t.parentElement.classList.toggle("zero",!v);touch();updPlanTotals()}
   else if(f==="wname"){const w=Y.weekly.find(w=>w.id===t.dataset.w);if(w){w.name=t.value;touch()}}
@@ -1153,7 +1191,28 @@ function openBackup(){
   m.innerHTML=`<div class="mbox"><h3>Backup &amp; restore</h3><p>Your tracker saves automatically. For extra safety, copy this backup text and keep it somewhere (a note, an email to yourself).</p>
   <textarea id="bk" readonly>${esc(JSON.stringify({app:"habit-tracker-dark",v:1,years}))}</textarea><div class="row"><button class="btn pri" data-act="copyjson">Copy backup</button></div><hr>
   <h3>Restore</h3><p>Paste a backup below (or choose a saved file). Years in the backup replace the same years here.</p>
-  <textarea id="rs" placeholder='{"app":"habit-tracker-dark", ...}'></textarea><div class="row"><input type="file" id="rf" accept=".json,.txt,application/json,text/plain" style="font-size:11px;color:var(--mu)"><span style="flex:1"></span><button class="btn" data-act="closem">Close</button><button class="btn pri" data-act="importjson">Restore</button></div></div>`;
+  <textarea id="rs" placeholder='{"app":"habit-tracker-dark", ...}'></textarea><div class="row"><input type="file" id="rf" accept=".json,.txt,application/json,text/plain" style="font-size:11px;color:var(--mu)"><span style="flex:1"></span><button class="btn" data-act="closem">Close</button><button class="btn pri" data-act="importjson">Restore</button></div>
+  ${mode==="cloud"&&user?`<hr><h3 style="color:var(--danger)">Delete account</h3>
+  <p>Permanently deletes your account (${esc(user.email||"this account")}) and every year of habit data stored in the cloud. This can't be undone. Copy the backup above first if you might want your data later.</p>
+  <div class="row"><input id="delc" class="dinp" placeholder="Type DELETE to confirm" autocomplete="off" aria-label="Type DELETE to confirm"><button class="btn danger" id="delb" data-act="delacct" disabled>Delete my account</button></div>`:""}</div>`;
+}
+async function deleteAccount(){
+  if(mode!=="cloud"||!user||deleting)return;
+  const btn=$("#delb"),me=user,key=lsKey();
+  deleting=true;clearTimeout(timer);btn.disabled=true;btn.textContent="Deleting…";
+  while(saving)await sleep(100); // let an in-flight save finish so it can't recreate a row afterwards
+  const{error}=await sb.rpc("delete_my_account");
+  if(user!==me){deleting=false;return}
+  if(error){deleting=false;console.warn("Account deletion failed",error);
+    const missing=error.code==="PGRST202"||/delete_my_account/.test(error.message||"");
+    toast(missing?"Account deletion isn't set up on this server yet: run supabase/schema.sql again in Supabase. Nothing was deleted."
+      :"Couldn't delete your account. Nothing was deleted; please try again.",7000);
+    btn.textContent="Delete my account";btn.disabled=$("#delc").value.trim()!=="DELETE";
+    if(dirty.size)flush();return}
+  try{localStorage.removeItem(key);localStorage.removeItem(key+":base")}catch(e){} // no copy left on this device either
+  try{await sb.auth.signOut({scope:"local"})}catch(e){}
+  deleting=false;$("#modal").classList.add("hidden");showAuth();
+  toast("Your account and all of its habit data have been deleted.",6000);
 }
 function importBackup(txt){
   try{const o=JSON.parse(txt);if(!o||typeof o.years!=="object")throw 0;let c=0;

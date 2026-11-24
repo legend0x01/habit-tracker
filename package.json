@@ -1,0 +1,11 @@
+{
+  "name": "habit-tracker",
+  "private": true,
+  "description": "No dependencies and no build step. This file only exists so `npm test` runs the tests.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

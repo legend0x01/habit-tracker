@@ -35,6 +35,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 ## ✨ Features
 
 **Track**
+- **Today**: a one-tap checklist of today's habits, grouped by category; step back to fill in yesterday. Phones open on it
 - **Monthly dashboard**: tick grid for every day, grouped by week, with today highlighted
 - **Quick add**: type a habit under the grid and press Enter; it's trackable immediately
 - **Weekly habits** for things you do once a week (laundry, meal prep, calling family); add, rename or delete them right from the month view
@@ -56,6 +57,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Real-time sync** between your devices and open tabs
 - **Guest mode**: use it without an account; sign in later and your data moves into your account
 - **Backup and restore** everything as JSON
+- **Delete your account** yourself: removes the account and all of its data immediately
 - **Light and dark mode**: follows your system setting; switch with the ☀️/🌙 button and it's remembered
 - **Installable app (PWA)**: add it to your home screen or desktop; it opens full-screen and works offline
 - **Responsive**: works on phones, tablets and desktops
@@ -134,6 +136,14 @@ python -m http.server 3000      # or: npx serve -l 3000 .
 
 Open <http://localhost:3000>. To run your own copy, put your Supabase keys in `config.js` (see below). If you put placeholder values there (e.g. `YOUR_PROJECT_REF`), the app runs in **local-only mode**: no sign-in, data saved in the browser.
 
+Run the tests (Node 20 or newer, nothing to install):
+
+```bash
+npm test        # or: node --test
+```
+
+They cover the sync merge in `merge.js` and check that everything the page loads is cached for offline use. GitHub Actions runs them on every push.
+
 ## 🧰 Self-host it
 
 You'll need a free [Supabase](https://supabase.com) project and a Google Cloud OAuth client. It takes about 15 minutes.
@@ -181,11 +191,13 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 ## 📁 Project structure
 
 ```text
-├── index.html            the whole app: UI, charts, sync
+├── index.html            the app: UI, charts, sync
+├── merge.js              three-way merge used when two devices edited the same year
 ├── config.js             Supabase URL + publishable key, optional UPI ID
 ├── manifest.webmanifest  app name, icons and colours for installing
 ├── sw.js                 service worker: offline cache, notification clicks
-├── supabase/schema.sql   table, row-level security policies, realtime
+├── supabase/schema.sql   table, row-level security policies, realtime, account deletion
+├── tests/                node --test suites (merge logic, offline cache)
 ├── support.html          "buy me a coffee" page (UPI QR)
 ├── privacy.html          privacy policy (needed for Google sign-in)
 ├── terms.html            terms of service

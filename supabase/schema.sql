@@ -44,3 +44,22 @@ begin
     alter publication supabase_realtime add table public.habit_years;
   end if;
 end $$;
+
+-- Self-service account deletion: the "Delete my account" button calls this.
+-- It deletes the signed-in user; their habit_years rows go with it (on delete cascade).
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not signed in';
+  end if;
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
