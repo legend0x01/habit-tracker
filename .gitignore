@@ -5,3 +5,7 @@ node_modules/
 .env.*
 .vscode/
 .idea/
+
+# server secrets for push reminders (VAPID private key, cron secret): never commit
+supabase/.local/
+supabase/.temp/

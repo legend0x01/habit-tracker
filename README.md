@@ -40,7 +40,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Quick add**: type a habit under the grid and press Enter; it's trackable immediately
 - **Weekly habits** for things you do once a week (laundry, meal prep, calling family); add, rename or delete them right from the month view
 - **Categories and colours**: group daily habits (Health, Study, Work…) and give each group a colour; the tick grid is grouped by category and the charts use its colour
-- **Daily reminder**: a notification at the time you choose, only on days when some habits are still unticked
+- **Daily reminder**: a notification at the time you choose, only on days when some habits are still unticked. Signed in, it arrives even when the app is closed (Web Push)
 - **Notes** for each month: wins, reflections, plans
 
 **Understand**
@@ -188,6 +188,29 @@ You'll need a free [Supabase](https://supabase.com) project and a Google Cloud O
 Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 </details>
 
+<details>
+<summary><b>5. Push reminders (optional)</b></summary>
+
+Lets the daily reminder arrive when the app is closed. Without it, reminders work while the app is open. Needs [Node.js](https://nodejs.org) for the Supabase CLI.
+
+1. **Keys.** Make a VAPID key pair and a cron secret (Node 20+, run in the repo folder):
+   ```bash
+   node -e 'const {subtle}=crypto;subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},true,["sign","verify"]).then(async k=>{const j={publicKey:await subtle.exportKey("jwk",k.publicKey),privateKey:await subtle.exportKey("jwk",k.privateKey)};require("fs").mkdirSync("supabase/.local",{recursive:true});require("fs").writeFileSync("supabase/.local/reminders.env",`VAPID_KEYS=${JSON.stringify(JSON.stringify(j))}\nVAPID_SUBJECT="https://your-site.example/"\nCRON_SECRET="${require("crypto").randomBytes(32).toString("base64url")}"\n`);console.log("vapidPublicKey:",Buffer.from(await subtle.exportKey("raw",k.publicKey)).toString("base64url"))})'
+   ```
+   Put the printed key in `vapidPublicKey` in `config.js`. `supabase/.local/` is git-ignored: never commit it.
+2. **Database.** Run [`supabase/schema.sql`](supabase/schema.sql) again (it adds `push_subscriptions`).
+3. **Function.**
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npx supabase secrets set --env-file supabase/.local/reminders.env
+   npx supabase functions deploy send-reminders --no-verify-jwt
+   ```
+   `--no-verify-jwt` is intended: the function checks `CRON_SECRET` itself.
+4. **Schedule.** In **Database → Extensions** enable `pg_cron` and `pg_net`. Then in the SQL Editor run [`supabase/reminders-cron.sql`](supabase/reminders-cron.sql) with `<project-ref>` and `<cron-secret>` (the `CRON_SECRET` value) filled in.
+5. **Check.** Edge Functions → send-reminders → Logs should show a run every 5 minutes. Each returns `{"checked","sent","allDone","removed","failed"}`.
+</details>
+
 ## 📁 Project structure
 
 ```text
@@ -195,9 +218,11 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 ├── merge.js              three-way merge used when two devices edited the same year
 ├── config.js             Supabase URL + publishable key, optional UPI ID
 ├── manifest.webmanifest  app name, icons and colours for installing
-├── sw.js                 service worker: offline cache, notification clicks
-├── supabase/schema.sql   table, row-level security policies, realtime, account deletion
-├── tests/                node --test suites (merge logic, offline cache)
+├── sw.js                 service worker: offline cache, push reminders, notification clicks
+├── supabase/schema.sql   tables, row-level security policies, realtime, account deletion
+├── supabase/functions/send-reminders/   Edge Function that sends push reminders
+├── supabase/reminders-cron.sql          runs it every 5 minutes (pg_cron)
+├── tests/                node --test suites (merge logic, offline cache, reminder rules)
 ├── support.html          "buy me a coffee" page (UPI QR)
 ├── privacy.html          privacy policy (needed for Google sign-in)
 ├── terms.html            terms of service
@@ -212,7 +237,7 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 - [x] Quick-add habits from the monthly grid
 - [x] Installable app (PWA) with offline support
 - [x] Daily reminder notifications
-- [ ] Reminders when the app is fully closed (Web Push)
+- [x] Reminders when the app is fully closed (Web Push)
 - [ ] Export a month or year as CSV / PDF
 - [x] Light and dark theme
 - [x] Habit categories and colours

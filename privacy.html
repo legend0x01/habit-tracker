@@ -25,7 +25,8 @@ a{color:#1fb5e0}h1{font-size:28px;margin:0 0 4px}h2{font-size:18px;margin:28px 0
 <p>If you sign in with Google, we receive your <b>name, email address and profile picture</b> from your Google account. We use them only to create your account, show who is signed in, and keep your data separate from other users.</p>
 <p>We store the habit data you enter (habits, categories, goals, check-ins and notes) so it can sync across your devices.</p>
 <p>If you use the app without signing in, your data stays in your browser's local storage and is never sent to us.</p>
-<p>Daily reminder settings (on or off, and the time) stay on the device where you set them. Reminder notifications are created by the app in your browser; no reminder data is sent to us or to a push service.</p>
+<p>Without an account, daily reminder settings (on or off, and the time) stay on the device where you set them, and the app creates reminder notifications in your browser.</p>
+<p>If you are signed in and turn the daily reminder on, we store, for that device, your browser's <b>push subscription</b> (an address and encryption keys your browser gives us for sending it notifications), the <b>reminder time</b> and the device's <b>time zone</b>, so the reminder can arrive even when the app is closed. At that time our server checks whether today's habits are ticked and, if some aren't, sends an encrypted notification through your browser's push service (Google, Mozilla, Microsoft or Apple, depending on the browser). The notification shows the names of up to three unticked habits; the push service can't read it. Turning the reminder off, signing out or deleting your account removes this data.</p>
 
 <h2>Where it is stored</h2>
 <p>Account and habit data is stored with <a href="https://supabase.com" rel="noopener">Supabase</a>, our database and authentication provider. Database access rules ensure each user can only read and change their own data.</p>

@@ -1,0 +1,52 @@
+/* Daily reminder rules for the send-reminders Edge Function. Plain JS with no imports, so
+   tests/reminders.test.js can check it with Node. Mirrors leftToday()/remindText() in index.html. */
+
+/* push services browsers use (Chrome/Android, Firefox, Edge, Safari); anything else is refused */
+export const PUSH_HOSTS = ["fcm.googleapis.com", "push.services.mozilla.com", "notify.windows.com", "push.apple.com"];
+
+export function pushHostOk(endpoint) {
+  try {
+    const u = new URL(endpoint);
+    return u.protocol === "https:" && PUSH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith("." + h));
+  } catch {
+    return false;
+  }
+}
+
+/* the date and time it is right now for someone in time zone tz; throws RangeError for an unknown zone */
+export function localNow(date, tz) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(date).map(x => [x.type, x.value]));
+  return { y: +p.year, m: +p.month - 1, d: +p.day, hh: +p.hour, mm: +p.minute, day: `${p.year}-${p.month}-${p.day}` };
+}
+
+/* due once a day: at or after the chosen time, and not yet sent on this local day */
+export function isDue(sub, now) {
+  const [h, m] = String(sub.remind_at).split(":").map(Number);
+  if (!(h >= 0 && h < 24 && m >= 0 && m < 60)) return false;
+  return now.hh * 60 + now.mm >= h * 60 + m && sub.last_sent !== now.day;
+}
+
+/* today's active daily habits that aren't ticked; null when that year isn't set up */
+export function leftToday(data, y, m, d) {
+  if (!data || !Array.isArray(data.habits)) return null;
+  const i = Math.round((Date.UTC(y, m, d) - Date.UTC(y, 0, 1)) / 864e5);
+  const checks = data.checks && typeof data.checks === "object" ? data.checks : {};
+  return data.habits.filter(h => h && Array.isArray(h.goals) && (+h.goals[m] || 0) > 0 &&
+    String(checks[h.id] || "").charCodeAt(i) !== 49);
+}
+
+export function reminderText(left) {
+  const names = left.slice(0, 3).map(h => String(h.name || "").trim() || "Untitled").join(", ");
+  return left.length === 1 ? `"${names}" is still open today.`
+    : `${left.length} habits still open today: ${names}${left.length > 3 ? "…" : ""}`;
+}
+
+/* constant-time comparison for the cron secret */
+export function sameSecret(a, b) {
+  a = String(a || ""); b = String(b || "");
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < Math.max(a.length, b.length); i++) diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
+  return diff === 0 && a.length > 0;
+}

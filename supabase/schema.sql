@@ -63,3 +63,41 @@ $$;
 
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- Push reminders: one row per device that turned on the daily reminder while signed in.
+-- The send-reminders Edge Function reads these (with the service role) and sends Web Push
+-- notifications even when the app is closed. Users can only see and change their own devices.
+create table if not exists public.push_subscriptions (
+  endpoint   text        primary key
+             check (length(endpoint) < 1000
+               and endpoint ~ '^https://([a-z0-9-]+\.)*(fcm\.googleapis\.com|push\.services\.mozilla\.com|notify\.windows\.com|push\.apple\.com)/'),
+  user_id    uuid        not null default auth.uid() references auth.users (id) on delete cascade,
+  p256dh     text        not null check (length(p256dh) < 200),
+  auth       text        not null check (length(auth) < 100),
+  remind_at  text        not null check (remind_at ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$'),
+  tz         text        not null check (length(tz) between 1 and 64),
+  last_sent  date,
+  updated_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user_id on public.push_subscriptions (user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "push_subscriptions: select own" on public.push_subscriptions;
+drop policy if exists "push_subscriptions: insert own" on public.push_subscriptions;
+drop policy if exists "push_subscriptions: update own" on public.push_subscriptions;
+drop policy if exists "push_subscriptions: delete own" on public.push_subscriptions;
+
+create policy "push_subscriptions: select own" on public.push_subscriptions
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+create policy "push_subscriptions: insert own" on public.push_subscriptions
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+create policy "push_subscriptions: update own" on public.push_subscriptions
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+create policy "push_subscriptions: delete own" on public.push_subscriptions
+  for delete to authenticated using ((select auth.uid()) = user_id);
