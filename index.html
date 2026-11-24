@@ -190,6 +190,26 @@ textarea.notes{width:100%;min-height:220px;background:repeating-linear-gradient(
 .wcf .bar{flex:1;min-width:0}
 .wfoot{display:flex;gap:8px;align-items:center;padding:8px 9px;border-top:1px solid var(--ln2)}
 .wfoot form{flex:1;min-width:0}
+.wrow .wr{display:flex;align-items:center;gap:6px;flex:none}
+.wrow .wn{font-size:10.5px;font-weight:700;color:var(--mu)}
+.wrow.off{cursor:default;opacity:.55}
+.wrow.off:hover{background:none}
+.wrow em{font-style:normal;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.3px}
+.wrow.ed{cursor:default}
+.cb.part{background:color-mix(in srgb,var(--bc) 35%,transparent);opacity:1}
+.wgb{min-width:38px;padding:3px 8px;border-radius:6px;border:1px dashed var(--bd);background:var(--inset);font-size:11px;font-weight:700;color:var(--tx)}
+.wgb:hover,.wgb:focus-visible{border-style:solid;border-color:var(--focus);outline:none}
+.wgb.zero{color:var(--dim)}
+.wgrow{display:flex;align-items:center;gap:8px;margin:12px 0}
+.wgrow input{width:64px;text-align:center;background:var(--inset);border:1px solid var(--ln);border-radius:7px;padding:7px;font-size:16px;font-weight:700;outline:none}
+.wgrow input:focus{border-color:var(--focus)}
+.wgrow .ib{font-size:16px;font-weight:700;border:1px solid var(--ln);width:34px;height:34px}
+.scope{border:0;padding:0;margin:8px 0}
+.scope legend{font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:4px}
+.scope label{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--ln);border-radius:8px;margin:6px 0;font-size:12.5px;cursor:pointer}
+.scope label:has(input:checked){border-color:var(--focus);background:var(--p2)}
+.scope input{accent-color:var(--focus);margin:0}
+.scope small{display:block;color:var(--mu);font-size:11px;font-weight:400}
 .wedit{padding:8px 9px;border-top:1px solid var(--ln2)}
 .wedit .er{display:flex;gap:6px;align-items:center;margin:4px 0}
 .wedit input{flex:1;min-width:0;background:var(--inset);border:1px solid var(--ln);border-radius:6px;padding:6px 9px;font-size:12px;font-weight:600;outline:none}
@@ -441,7 +461,8 @@ function norm(Y){ // make sure a year object has every field
   const cids=new Set(Y.cats.map(c=>c.id));
   Y.habits.forEach(h=>{if(!Array.isArray(h.goals)||h.goals.length!==12)h.goals=MS.map((_,m)=>dim(Y.year,m));
     if(typeof h.cat!=="string"||(h.cat&&!cids.has(h.cat)))h.cat=""});
-  Y.weekly.forEach(w=>{if(!Array.isArray(w.months)||w.months.length!==12)w.months=Array(12).fill(1)});
+  Y.weekly.forEach(w=>{if(!Array.isArray(w.months)||w.months.length!==12)w.months=Array(12).fill(1);
+    w.goals=wGoals(w).map(v=>Math.max(0,Math.min(7,parseInt(v,10)||0)))}); // times per week, per week (see merge.js)
   return Y;
 }
 
@@ -455,8 +476,13 @@ function setChk(y,hid,i,v){
   if(s.length<L)s=s.padEnd(L,"0");
   Y.checks[hid]=s.slice(0,i)+(v?"1":"0")+s.slice(i+1);
 }
-const wChk=(y,wid,k)=>{const s=years[y]?.wchecks?.[wid];return !!s&&s.charCodeAt(k)===49};
-function setW(y,wid,k,v){const Y=years[y];let s=(Y.wchecks[wid]||"").padEnd(60,"0");Y.wchecks[wid]=s.slice(0,k)+(v?"1":"0")+s.slice(k+1)}
+/* weekly checks: one digit per week slot (k = month*5 + week) = how many times it was done that week */
+const wCnt=(y,wid,k)=>{const s=years[y]?.wchecks?.[wid];const c=s?s.charCodeAt(k)-48:0;return c>0&&c<10?c:0};
+function setW(y,wid,k,c){const Y=years[y];let s=(Y.wchecks[wid]||"").padEnd(WSLOTS,"0");Y.wchecks[wid]=s.slice(0,k)+String(Math.max(0,Math.min(9,c)))+s.slice(k+1)}
+/* weekly goals: w.goals[k] = times per week for that week; 0 skips the week. A month switched off in the Planner has no goal. */
+const wdays=(y,m,b)=>b<4?7:dim(y,m)-28; // the "Extra Days" week only has 1-3 days
+function wGoal(y,w,k){const m=Math.floor(k/5),b=k%5;if(!+w.months[m]||b>=nb(y,m))return 0;return Math.min(wdays(y,m,b),+wGoals(w)[k]||0)}
+const wDone=(y,w,k)=>Math.min(wCnt(y,w.id,k),wGoal(y,w,k));
 
 /* ================= stats ================= */
 function refDay(y,m){const n=now();if(y<n.y||(y===n.y&&m<n.m))return dim(y,m);if(y===n.y&&m===n.m)return n.d;return 0}
@@ -492,8 +518,8 @@ function monthStats(y,m){
 }
 function wStats(y,m){
   const act=weeklyIn(y,m),B=nb(y,m),cols=[];
-  for(let b=0;b<B;b++){let c=0;for(const w of act)if(wChk(y,w.id,m*5+b))c++;cols.push({b,c,g:act.length,p:act.length?c/act.length:0})}
-  const done=sum(cols.map(x=>x.c)),goal=act.length*B;
+  for(let b=0;b<B;b++){const k=m*5+b;let c=0,g=0;for(const w of act){g+=wGoal(y,w,k);c+=wDone(y,w,k)}cols.push({b,c,g,p:g?c/g:0})}
+  const done=sum(cols.map(x=>x.c)),goal=sum(cols.map(x=>x.g));
   return{act,cols,done,goal,rem:Math.max(0,goal-done),p:goal?done/goal:0,B};
 }
 
@@ -657,16 +683,27 @@ function viewMonth(m){
     <div class="ph" style="margin-top:14px">Weekly habits overview</div>
     ${W.cols.map(c=>({label:WK[c.b],val:c.c,frac:c.c/wmax,col:WC[c.b]})).map(it=>hbars([it],"")).join("")}</div>
   <div class="panel" style="padding:0;overflow:hidden">${W.act.length?`<div class="wcols" style="--nb:${W.B}">${W.cols.map(c=>`<div class="wcol"><div class="wch" style="background:${WH[c.b]}">${WK[c.b]}</div>
-      ${W.act.map(w=>{const on=wChk(y,w.id,m*5+c.b);return`<div class="wrow" data-w="${w.id}" data-k="${m*5+c.b}"><span title="${esc(w.name)}">${esc(w.name)}</span><i class="cb b${c.b}${on?" on":""}"></i></div>`}).join("")}
+      ${W.act.map(w=>wCell(y,w,m*5+c.b,c.b)).join("")}
       <div class="wcf"><div class="bar"><i style="width:${f1(c.p*100)}%;background:${WC[c.b]}"></i></div>${pc(c.p)}</div></div>`).join("")}</div>`
       :`<div class="empty" style="padding:40px 16px">No weekly habits for ${MONTHS[m]} yet. Type one below and press Enter (laundry, meal prep, calling family…).</div>`}
-    ${wEdit&&W.act.length?`<div class="wedit"><div class="hint" style="margin-bottom:4px">Rename a habit by typing over its name. ✕ deletes it from the whole year. Choose which months it's active in the <b>Planner</b>.</div>
+    ${wEdit&&W.act.length?`<div class="wedit"><div class="hint" style="margin-bottom:4px">Click a weekly goal above (<b>1×</b>, <b>3×</b>…) to change how many times a week, for that week only, from that week on, or for every week. Rename a habit by typing over its name. ✕ deletes it from the whole year. Choose which months it's active in the <b>Planner</b>.</div>
       ${W.act.map(w=>`<div class="er"><input data-f="wname" data-w="${w.id}" value="${esc(w.name)}" maxlength="60" aria-label="Weekly habit name"><button class="ib del" data-act="delw" data-w="${w.id}" title="Delete this weekly habit">✕</button></div>`).join("")}</div>`:""}
     <div class="wfoot"><form data-f="wquickadd" data-m="${m}" autocomplete="off"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a weekly habit" title="Type a weekly habit (e.g. Laundry) and press Enter" aria-label="Add a weekly habit"></form>
       ${W.act.length?`<button class="btn sm${wEdit?" pri":""}" data-act="wedit">${wEdit?"Done":"✎ Edit"}</button>`:""}</div></div>
   <div class="panel ringp"><div class="ringbox">${ring(W.p,"Weekly habits progress","#22c55e",true)}</div></div></div>`;
   return h;
 }
+
+/* one weekly habit in one week: tick (goal 1) or count up to the goal; in edit mode, the goal button */
+function wCell(y,w,k,b){
+  const g=wGoal(y,w,k),c=wCnt(y,w.id,k),nm=`<span title="${esc(w.name)}">${esc(w.name)}</span>`;
+  if(wEdit)return`<div class="wrow ed">${nm}<button class="wgb${g?"":" zero"}" data-act="wgoal" data-w="${w.id}" data-k="${k}" title="Change the weekly goal" aria-label="${esc(w.name)}: ${g?g+" times":"skipped"} in ${WK[b]}. Change goal">${g?g+"×":"skip"}</button></div>`;
+  if(!g)return`<div class="wrow off" title="No goal this week">${nm}<em>SKIP</em></div>`;
+  const d=Math.min(c,g),cls=d>=g?" on":d?" part":"";
+  return`<div class="wrow" data-w="${w.id}" data-k="${k}" role="button" tabindex="0" aria-label="${esc(w.name)}: ${d} of ${g}">${nm}<span class="wr">${g>1?`<b class="wn">${d}/${g}</b>`:""}<i class="cb b${b}${cls}"></i></span></div>`;
+}
+const goalTxt=w=>{const vs=[...new Set(wGoals(w).filter((_,k)=>+w.months[Math.floor(k/5)]&&k%5<4))];if(!vs.length)return"—";
+  const lo=Math.min(...vs),hi=Math.max(...vs);return lo===hi?(lo?`${lo}× a week`:"skipped"):`${lo}–${hi}× a week`};
 
 /* Today: one-tap checklist for a single day (today by default; ‹ › steps back through this year) */
 function viewToday(){
@@ -689,10 +726,10 @@ function viewToday(){
   }
   if(!tot)h+=`<div class="empty">No daily habits for ${MONTHS[m]} yet. Add one below.</div>`;
   h+=`</div><form data-f="quickadd" data-m="${m}" autocomplete="off" style="margin-top:10px"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a habit" aria-label="Add a daily habit"></form></div>`;
-  const wk=weeklyIn(y,m),k=m*5+b;
-  if(wk.length){const wd=wk.filter(w=>wChk(y,w.id,k)).length;
-    h+=`<div class="panel"><div class="tgh" style="margin-top:0">${WK[b]} · weekly habits<span>${wd}/${wk.length}</span></div><div class="tlist">${wk.map(w=>{const on=wChk(y,w.id,k);
-      return`<button class="tk${on?" on":""}" style="--bc:${WC[b]}" data-w="${w.id}" data-k="${k}" aria-pressed="${on}"><i class="cb${on?" on":""}"></i><span class="tn">${esc(w.name||"Untitled")}</span></button>`}).join("")}</div></div>`}
+  const k=m*5+b,wk=weeklyIn(y,m).filter(w=>wGoal(y,w,k)>0);
+  if(wk.length){const wd=sum(wk.map(w=>wDone(y,w,k))),wg=sum(wk.map(w=>wGoal(y,w,k)));
+    h+=`<div class="panel"><div class="tgh" style="margin-top:0">${WK[b]} · weekly habits<span>${wd}/${wg}</span></div><div class="tlist">${wk.map(w=>{const g=wGoal(y,w,k),d=wDone(y,w,k),on=d>=g;
+      return`<button class="tk${on?" on":""}" style="--bc:${WC[b]}" data-w="${w.id}" data-k="${k}" aria-pressed="${on}"><i class="cb${on?" on":d?" part":""}"></i><span class="tn">${esc(w.name||"Untitled")}</span>${g>1?`<span class="fire">${d}/${g} this week</span>`:""}</button>`}).join("")}</div></div>`}
   h+=`<div class="tfoot"><button class="btn" data-act="tab" data-v="m${m}">${MONTHS[m]} dashboard →</button></div></div>`;
   return h;
 }
@@ -739,8 +776,8 @@ function viewAnnual(){
   if(cb)h+=`<div class="panel" style="margin-top:10px"><div class="ph">By category<small>${y} goal completed</small></div>${cb}</div>`;
 
   // weekly annual
-  const wDone=ws.map(s=>s.done),wGoal=ws.map(s=>s.goal),wd=sum(wDone),wg=sum(wGoal);
-  const wh=Y.weekly.map(w=>{let c=0,g=0;MS.forEach((_,m)=>{if(+w.months[m]){const B=nb(y,m);g+=B;for(let b=0;b<B;b++)if(wChk(y,w.id,m*5+b))c++}});return{w,c,g}});
+  const wDoneM=ws.map(s=>s.done),wGoalM=ws.map(s=>s.goal),wd=sum(wDoneM),wg=sum(wGoalM);
+  const wh=Y.weekly.map(w=>{let c=0,g=0;for(let k=0;k<WSLOTS;k++){g+=wGoal(y,w,k);c+=wDone(y,w,k)}return{w,c,g}});
   const wr=[...wh].sort((a,b)=>b.c-a.c).slice(0,10);
   h+=`<div class="wa"><div class="stack">
       <div class="panel title-card" style="min-height:80px"><div class="sub" style="margin:0;font-size:11px;color:var(--tx2)">WEEKLY HABITS</div></div>
@@ -748,7 +785,7 @@ function viewAnnual(){
       <div class="panel metric"><div class="ml">Weekly habit goals</div><div class="mv">${wg}</div></div>
       <div class="panel metric"><div class="ml">Completed</div><div class="mv g">${wd}</div></div>
       <div class="panel metric"><div class="ml">Remaining</div><div class="mv r">${Math.max(0,wg-wd)}</div></div></div>
-    <div class="panel"><div class="ph">Weekly habits overview</div>${comboChart(wDone,wGoal,"#22c55e")}</div>
+    <div class="panel"><div class="ph">Weekly habits overview</div>${comboChart(wDoneM,wGoalM,"#22c55e")}</div>
     <div class="panel"><div class="ph">Top 10 weekly habits<small>completed · remaining</small></div>${sbars(wr.map((x,i)=>({label:x.w.name,a:x.c,b:Math.max(0,x.g-x.c),col:PAL[i%PAL.length]})))}</div></div>
     <div class="wa2"><div class="panel"><div class="ph">Weekly habits breakdown</div>${donut(wh.map((x,i)=>({v:x.c,lab:x.w.name,col:PAL[i%PAL.length]})))}</div>
     <div class="panel"><div class="ringbox">${ring(wg?wd/wg:0,"Weekly habits progress","#22c55e",true)}</div></div></div>`;
@@ -796,11 +833,11 @@ function viewPlanner(){
     <div class="row"><button class="btn pri" data-act="addh">＋ Add daily habit</button><button class="btn" data-act="fillall">Set every habit to every day</button>
     <span class="hint">${Y.habits.length} daily habits · ⟳ = every day of every month · up to 50 habits</span></div></div>`;
 
-  h+=`<div class="panel" style="margin-top:10px"><div class="ph">Weekly habits<small>things you do once a week — tick them per week on each month's dashboard. Click a month to switch it on/off.</small></div><div class="sx"><table class="plan"><thead><tr><th class="hn">Weekly habits</th><th style="background:var(--p2);color:var(--tx)">Active months</th><th></th></tr></thead><tbody>`;
+  h+=`<div class="panel" style="margin-top:10px"><div class="ph">Weekly habits<small>things you do a few times a week: tick them per week on each month's dashboard. Click a month to switch it on/off; click the weekly goal to change how many times a week.</small></div><div class="sx"><table class="plan"><thead><tr><th class="hn">Weekly habits</th><th style="background:var(--p2);color:var(--tx)">Weekly goal</th><th style="background:var(--p2);color:var(--tx)">Active months</th><th></th></tr></thead><tbody>`;
   Y.weekly.forEach(w=>{
-    h+=`<tr><td class="hn"><input data-f="wname" data-w="${w.id}" value="${esc(w.name)}" placeholder="Weekly habit" maxlength="60"></td><td style="padding:4px 8px;white-space:nowrap">${MS.map((ml,m)=>`<button class="mt${+w.months[m]?" on":""}" style="${+w.months[m]?`background:${QH[Math.floor(m/3)]}`:""}" data-act="wm" data-w="${w.id}" data-m="${m}">${ml}</button>`).join("")}</td>
+    h+=`<tr><td class="hn"><input data-f="wname" data-w="${w.id}" value="${esc(w.name)}" placeholder="Weekly habit" maxlength="60"></td><td style="padding:4px 8px;white-space:nowrap"><button class="wgb" data-act="wgoal" data-w="${w.id}" data-k="${wSlotNow(y,w)}" title="Change the weekly goal">${goalTxt(w)}</button></td><td style="padding:4px 8px;white-space:nowrap">${MS.map((ml,m)=>`<button class="mt${+w.months[m]?" on":""}" style="${+w.months[m]?`background:${QH[Math.floor(m/3)]}`:""}" data-act="wm" data-w="${w.id}" data-m="${m}">${ml}</button>`).join("")}</td>
       <td class="act"><button class="ib del" data-act="delw" data-w="${w.id}" title="Delete">✕</button></td></tr>`});
-  if(!Y.weekly.length)h+=`<tr><td colspan="3" class="empty">No weekly habits yet.</td></tr>`;
+  if(!Y.weekly.length)h+=`<tr><td colspan="4" class="empty">No weekly habits yet.</td></tr>`;
   h+=`</tbody></table></div><div class="row"><button class="btn" data-act="addw">＋ Add weekly habit</button></div></div>`;
 
   const nextY=y+1;
@@ -1079,14 +1116,51 @@ function makeYear(y,mode,from){
     // months a habit hadn't started yet (leading zeros, e.g. you began mid-year) are filled with its latest goal
     const fillLead=arr=>{const first=arr.findIndex(v=>+v>0);if(first<=0)return arr.map((v,m)=>[m,+v||0]);const ref=[...arr].reverse().find(v=>+v>0);const refM=11-[...arr].reverse().findIndex(v=>+v>0);return arr.map((v,m)=>m<first?[refM,+ref]:[m,+v||0])};
     habits=F.habits.map(h=>({id:h.id,name:h.name,cat:h.cat||"",goals:fillLead(h.goals).map(([sm,g],m)=>g>=dim(from,sm)?dim(y,m):Math.min(g,dim(y,m)))}));
-    weekly=F.weekly.map(w=>({id:w.id,name:w.name,months:fillLead(w.months).map(([,v])=>v?1:0)}));}
+    // a weekly habit starts the new year with the goal it had in its last active week
+    const lastGoal=w=>{const g=wGoals(w);for(let k=WSLOTS-1;k>=0;k--)if(+w.months[Math.floor(k/5)]&&k%5<4&&+g[k]>0)return+g[k];return 1};
+    weekly=F.weekly.map(w=>({id:w.id,name:w.name,months:fillLead(w.months).map(([,v])=>v?1:0),goals:Array(WSLOTS).fill(lastGoal(w))}));}
   else if(mode==="starter"){const ck={};cats=STARTER_C.map(([k,name,col])=>{const c={id:uid("c"),name,col};ck[k]=c.id;return c});
-    habits=STARTER.map(([name,g,k])=>({id:uid("h"),name,cat:ck[k]||"",goals:G(m=>g==="all"?dim(y,m):Math.min(g,dim(y,m)))}));weekly=STARTER_W.map(name=>({id:uid("w"),name,months:G(()=>1)}))}
+    habits=STARTER.map(([name,g,k])=>({id:uid("h"),name,cat:ck[k]||"",goals:G(m=>g==="all"?dim(y,m):Math.min(g,dim(y,m)))}));weekly=STARTER_W.map(name=>({id:uid("w"),name,months:G(()=>1),goals:Array(WSLOTS).fill(1)}))}
   years[y]={v:1,year:y,carry,cats,habits,weekly,checks:{},wchecks:{},notes:Array(12).fill(""),updatedAt:Date.now()};
   touch(y);view=y===n.y?(narrow()?"today":"m"+n.m):"planner";if(!habits.length)view="planner";render();
   toast(mode==="copy"?`${y} is ready — habits carried over from ${from}`:`${y} is ready`);
 }
 function findH(id){return years[curY].habits.find(h=>h.id===id)}
+
+/* ---------- weekly goals: change one week, this week and the ones after, or every week ---------- */
+function wSlotNow(y,w){ // the week a goal change starts from when opened from the Planner: this week, else the first active week
+  const n=now(),act=k=>+w.months[Math.floor(k/5)]&&k%5<nb(y,Math.floor(k/5));
+  if(y===n.y){const k=n.m*5+bk(n.d);if(act(k))return k;for(let i=k+1;i<WSLOTS;i++)if(act(i))return i}
+  for(let i=0;i<WSLOTS;i++)if(act(i))return i;return 0}
+const wLabel=(k,y=curY)=>`${WK[k%5]} of ${MONTHS[Math.floor(k/5)]}${y!==now().y?" "+y:""}`;
+function openWGoal(wid,k){
+  const y=curY,w=years[y]?.weekly.find(x=>x.id===wid);if(!w)return;
+  const cur=+w.months[Math.floor(k/5)]?wGoal(y,w,k):(+wGoals(w)[k]||1),wl=wLabel(k),m=$("#modal");
+  m.classList.remove("hidden");
+  m.innerHTML=`<div class="mbox" role="dialog" aria-labelledby="wgT"><h3 id="wgT">Weekly goal · ${esc(w.name||"Untitled")}</h3>
+  <p>How many times a week do you want to do it? 0 skips the week.</p>
+  <div class="wgrow"><button class="ib" data-act="wgstep" data-d="-1" aria-label="One less">−</button><input type="number" id="wgN" min="0" max="7" value="${cur}" inputmode="numeric" aria-label="Times per week"><button class="ib" data-act="wgstep" data-d="1" aria-label="One more">＋</button><span class="hint">times a week</span></div>
+  <fieldset class="scope"><legend>Apply to</legend>
+    <label><input type="radio" name="wgS" value="one" checked><span>Only ${wl}<small>Every other week keeps its goal.</small></span></label>
+    <label><input type="radio" name="wgS" value="fwd"><span>${wl} and every week after<small>Earlier weeks keep their goal, so past progress doesn't change.</small></span></label>
+    <label><input type="radio" name="wgS" value="all"><span>Every week of ${y}<small>Rewrites past weeks too.</small></span></label>
+  </fieldset>
+  <p class="hint">Months switched off in the Planner stay off. The short "Extra Days" week is capped at its number of days.</p>
+  <div class="row"><span style="flex:1"></span><button class="btn" data-act="closem">Cancel</button><button class="btn pri" data-act="wgsave" data-w="${w.id}" data-k="${k}">Save</button></div></div>`;
+  const i=$("#wgN");i.focus();i.select();
+}
+function saveWGoal(wid,k){
+  const y=curY,w=years[y]?.weekly.find(x=>x.id===wid);if(!w)return;
+  let v=parseInt($("#wgN").value,10);if(isNaN(v))v=0;v=Math.max(0,Math.min(7,v));
+  const sc=document.querySelector('input[name="wgS"]:checked')?.value||"one",g=wGoals(w).slice();let n=0;
+  for(let i=0;i<WSLOTS;i++){
+    if(sc==="one"?i!==k:sc==="fwd"&&i<k)continue;
+    const mm=Math.floor(i/5),b=i%5;if(b>=nb(y,mm))continue;
+    g[i]=Math.min(v,wdays(y,mm,b));n++}
+  w.goals=g;touch(y);$("#modal").classList.add("hidden");render();
+  const what=v?`${v}× a week`:"skipped";
+  toast(sc==="one"?`${w.name||"Weekly habit"}: ${what} in ${wLabel(k)}`:sc==="fwd"?`${w.name||"Weekly habit"}: ${what} from ${wLabel(k)} on`:`${w.name||"Weekly habit"}: ${what}, every week of ${y}`,3500);
+}
 function updPlanTotals(){const Y=years[curY];const mt=MS.map((_,m)=>sum(Y.habits.map(h=>+h.goals[m]||0)));
   Y.habits.forEach(h=>{const e=document.getElementById("pt-"+h.id);if(e)e.textContent=sum(h.goals.map(g=>+g||0))});
   mt.forEach((v,m)=>{const e=document.getElementById("pm-"+m);if(e)e.textContent=v});const a=$("#pall");if(a)a.textContent=sum(mt);
@@ -1097,7 +1171,10 @@ document.addEventListener("click",e=>{
   if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h;setChk(y,hid,i,!isChk(y,hid,i));touch();render();
     if(cell.classList.contains("tk"))document.querySelector(`.tk[data-h="${hid}"]`)?.focus({preventScroll:true});return} // keep keyboard focus on the row
   const wr=e.target.closest(".wrow[data-w],.tk[data-w]");
-  if(wr){const k=+wr.dataset.k;setW(curY,wr.dataset.w,k,!wChk(curY,wr.dataset.w,k));touch();render();return}
+  if(wr){const k=+wr.dataset.k,wid=wr.dataset.w,w=years[curY].weekly.find(x=>x.id===wid);if(!w)return;
+    const g=wGoal(curY,w,k);if(!g)return;const d=wDone(curY,w,k);
+    setW(curY,wid,k,d>=g?0:d+1);touch();render(); // each tap counts one more; past the goal it starts again at 0
+    document.querySelector(`${wr.classList.contains("tk")?".tk":".wrow"}[data-w="${wid}"][data-k="${k}"]`)?.focus({preventScroll:true});return}
   const b=e.target.closest("[data-act]");if(!b)return;
   const act=b.dataset.act,Y=years[curY],n=now();
   if(b.tagName==="A")e.preventDefault();
@@ -1120,7 +1197,7 @@ document.addEventListener("click",e=>{
     case"moveh":{const i=Y.habits.findIndex(h=>h.id===b.dataset.h),j=i+ +b.dataset.d;if(j<0||j>=Y.habits.length)break;[Y.habits[i],Y.habits[j]]=[Y.habits[j],Y.habits[i]];touch();render();break}
     case"fillh":{const h=findH(b.dataset.h);h.goals=MS.map((_,m)=>dim(curY,m));touch();render();break}
     case"fillall":Y.habits.forEach(h=>h.goals=MS.map((_,m)=>(curY===n.y&&m<n.m&&!(+h.goals[m]))?0:dim(curY,m)));touch();render();toast("Every habit set to every day");break;
-    case"addw":{const w={id:uid("w"),name:"",months:MS.map((_,m)=>curY===n.y&&m<n.m?0:1)};Y.weekly.push(w);touch();render();const inp=document.querySelector(`input[data-f="wname"][data-w="${w.id}"]`);if(inp)inp.focus();break}
+    case"addw":{const w={id:uid("w"),name:"",months:MS.map((_,m)=>curY===n.y&&m<n.m?0:1),goals:Array(WSLOTS).fill(1)};Y.weekly.push(w);touch();render();const inp=document.querySelector(`input[data-f="wname"][data-w="${w.id}"]`);if(inp)inp.focus();break}
     case"delw":armDel(b,()=>{Y.weekly=Y.weekly.filter(w=>w.id!==b.dataset.w);delete Y.wchecks[b.dataset.w];touch();render()});break;
     case"addc":{if(Y.cats.length>=20){toast("Up to 20 categories");break}
       const c={id:uid("c"),name:b.dataset.name||"",col:PAL.find(p=>!Y.cats.some(x=>x.col===p))||PAL[Y.cats.length%PAL.length]};
@@ -1132,6 +1209,9 @@ document.addEventListener("click",e=>{
     case"remind":openRemind();break;
     case"rtest":testRemind();break;
     case"wm":{const w=Y.weekly.find(w=>w.id===b.dataset.w);const m=+b.dataset.m;w.months[m]=+w.months[m]?0:1;touch();render();break}
+    case"wgoal":openWGoal(b.dataset.w,+b.dataset.k);break;
+    case"wgsave":saveWGoal(b.dataset.w,+b.dataset.k);break;
+    case"wgstep":{const i=$("#wgN");if(i)i.value=Math.max(0,Math.min(7,(parseInt(i.value,10)||0)+ +b.dataset.d));break}
     case"backup":openBackup();break;
     case"wedit":wEdit=!wEdit;render();if(wEdit){const i=document.querySelector(".wedit input");if(i)i.focus({preventScroll:true})}break;
     case"theme":setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");break;
@@ -1139,6 +1219,10 @@ document.addEventListener("click",e=>{
     case"copyjson":{const t=$("#bk");t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("Backup copied"),()=>{try{document.execCommand("copy");toast("Backup copied")}catch(_){toast("Select the text and copy it manually")}});break}
     case"importjson":importBackup($("#rs").value);break;
   }
+});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.id==="wgN"){e.preventDefault();$('[data-act="wgsave"]')?.click();return} // Enter saves the weekly goal
+  if((e.key==="Enter"||e.key===" ")&&e.target.matches(".wrow[data-w]")){e.preventDefault();e.target.click()} // weekly ticks work from the keyboard
 });
 document.addEventListener("input",e=>{
   const t=e.target,f=t.dataset.f;
@@ -1160,7 +1244,7 @@ document.addEventListener("submit",e=>{
   const same=Y.weekly.find(w=>w.name.trim().toLowerCase()===name.toLowerCase());
   if(same&&+same.months[m]){toast(`"${name}" is already on your list`);return}
   if(same){same.months=same.months.map((v,i)=>i>=m?1:+v)} // re-activate it from this month on
-  else Y.weekly.push({id:uid("w"),name,months:MS.map((_,i)=>i>=m?1:0)});
+  else Y.weekly.push({id:uid("w"),name,months:MS.map((_,i)=>i>=m?1:0),goals:Array(WSLOTS).fill(1)});
   touch();render();toast(`Added "${name}"`);
   const inp=document.querySelector('form[data-f="wquickadd"] .qa');if(inp)inp.focus({preventScroll:true});
 });
