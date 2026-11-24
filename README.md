@@ -38,12 +38,14 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Monthly dashboard**: tick grid for every day, grouped by week, with today highlighted
 - **Quick add**: type a habit under the grid and press Enter; it's trackable immediately
 - **Weekly habits** for things you do once a week (laundry, meal prep, calling family); add, rename or delete them right from the month view
+- **Categories and colours**: group daily habits (Health, Study, Work…) and give each group a colour; the tick grid is grouped by category and the charts use its colour
+- **Daily reminder**: a notification at the time you choose, only on days when some habits are still unticked
 - **Notes** for each month: wins, reflections, plans
 
 **Understand**
 - **Progress rings**: momentum (7-day rolling), daily, weekly and monthly completion
 - **Streaks** per habit, optionally carried across months and into the next year
-- **Annual dashboard**: goal vs. done per month, quarterly progress, ✔/✘ per habit per month, top habits, weekly-habit breakdown
+- **Annual dashboard**: goal vs. done per month, quarterly progress, ✔/✘ per habit per month, top habits, progress by category, weekly-habit breakdown
 
 **Plan**
 - **Yearly planner**: set how many days per month you aim to do each habit, or switch a habit off for a month
@@ -55,6 +57,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Guest mode**: use it without an account; sign in later and your data moves into your account
 - **Backup and restore** everything as JSON
 - **Light and dark mode**: follows your system setting; switch with the ☀️/🌙 button and it's remembered
+- **Installable app (PWA)**: add it to your home screen or desktop; it opens full-screen and works offline
 - **Responsive**: works on phones, tablets and desktops
 
 ## 📸 Screenshots
@@ -83,7 +86,8 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 | Auth | [Supabase Auth](https://supabase.com/docs/guides/auth) with Google OAuth | Secure sign-in without running a server |
 | Database | Supabase Postgres + row-level security | Each user can only ever read and write their own rows |
 | Sync | Debounced upserts + Supabase Realtime | Fast local edits, live updates on other devices |
-| Offline cache | `localStorage` | Instant load, keeps working when the network drops |
+| Offline cache | `localStorage` + a service worker | Instant load, opens and keeps working with no network |
+| Reminders | Notifications API, scheduled in the page | No push server needed |
 | Hosting | GitHub Pages | Free static hosting |
 
 ## 🔧 How it works
@@ -98,7 +102,9 @@ flowchart LR
 ```
 
 - Every edit is written to `localStorage` immediately and sent to Supabase about 0.7 s later.
-- Each **year is one row** (`user_id`, `year`, `data jsonb`). When two devices disagree, the copy with the newer `updatedAt` wins.
+- Each **year is one row** (`user_id`, `year`, `data jsonb`). When two devices both changed a year, their edits are merged: each device remembers the last copy it agreed on with the cloud, so a three-way merge keeps changes from both (ticks day by day, habits and categories by id). If both changed the very same value, the device that's saving wins.
+- The service worker caches the app, so it opens offline. Pages are fetched network-first, so a new deploy shows up on the next visit. Supabase requests are never cached.
+- Reminders are checked every 30 seconds while the app is open or in a background tab. Phones pause apps that aren't in use, so a fully closed app can't remind you; that would need Web Push from a server.
 - Daily check-ins are stored compactly as one `"0"/"1"` string per habit, one character per day of the year.
 - Row-level security policies in [`supabase/schema.sql`](supabase/schema.sql) restrict every query to `auth.uid() = user_id`.
 
@@ -109,7 +115,8 @@ flowchart LR
 public.habit_years
   user_id    uuid         → auth.users.id   (default auth.uid())
   year       int
-  data       jsonb        → { habits, weekly, checks, wchecks, notes, carry, updatedAt }
+  data       jsonb        → { habits, cats, weekly, checks, wchecks, notes, carry, updatedAt }
+                            habits[i] = { id, name, cat, goals[12] }, cats[i] = { id, name, col }
   updated_at timestamptz
   primary key (user_id, year)
 ```
@@ -176,6 +183,8 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 ```text
 ├── index.html            the whole app: UI, charts, sync
 ├── config.js             Supabase URL + publishable key, optional UPI ID
+├── manifest.webmanifest  app name, icons and colours for installing
+├── sw.js                 service worker: offline cache, notification clicks
 ├── supabase/schema.sql   table, row-level security policies, realtime
 ├── support.html          "buy me a coffee" page (UPI QR)
 ├── privacy.html          privacy policy (needed for Google sign-in)
@@ -189,11 +198,12 @@ Any static host works the same way: Netlify, Vercel, Cloudflare Pages.
 - [x] Google sign-in and cloud sync
 - [x] Real-time sync across devices
 - [x] Quick-add habits from the monthly grid
-- [ ] Installable app (PWA) with offline support
-- [ ] Daily reminder notifications
+- [x] Installable app (PWA) with offline support
+- [x] Daily reminder notifications
+- [ ] Reminders when the app is fully closed (Web Push)
 - [ ] Export a month or year as CSV / PDF
 - [x] Light and dark theme
-- [ ] Habit categories and colours
+- [x] Habit categories and colours
 
 Have an idea? [Open an issue](https://github.com/legend0x01/habit-tracker/issues/new/choose).
 
