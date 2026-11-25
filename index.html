@@ -361,6 +361,61 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
   .wa{grid-template-columns:220px minmax(0,1fr)}
   .wa>:last-child{grid-column:1/-1}
 }
+/* ---------- to-do ---------- */
+.tdo{display:flex;flex-direction:column;gap:10px}
+.tdo-top{display:grid;grid-template-columns:minmax(170px,1fr) 2.3fr minmax(150px,.9fr);gap:10px}
+.tdo-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.tdo-st{border-radius:9px;padding:12px 8px;text-align:center;display:flex;flex-direction:column;justify-content:center;gap:4px;
+  background:color-mix(in srgb,var(--sc) 9%,var(--inset));border:1px solid color-mix(in srgb,var(--sc) 28%,var(--ln))}
+.tdo-st b{font-size:28px;line-height:1;color:var(--sc);font-weight:700}
+.tdo-st span{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx2)}
+.tdo-add{display:flex;flex-direction:column;gap:9px}
+.tdo-row{display:flex;gap:8px;align-items:stretch}
+.tdo-row .qa{flex:1;min-width:0;font-size:13px;padding:9px 11px}
+.tdo-row input[type=date]{background:var(--inset);border:1px solid var(--ln);border-radius:6px;padding:6px 8px;font-size:12px;font-weight:600;color:var(--tx);outline:none;min-width:0}
+.tdo-row input[type=date]:focus{border-color:var(--focus)}
+.tdo-quick{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tdo-quick .hint{margin-right:2px}
+.tdo-q{padding:4px 11px;border-radius:999px;border:1px solid var(--ln);background:transparent;color:var(--mu);font-size:11px;font-weight:700;transition:.12s}
+.tdo-q:hover{color:var(--tx);border-color:var(--bd)}
+.tdo-q.on{background:var(--p2);color:var(--hi);border-color:var(--focus)}
+.tdo-gh{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tx2);margin:0 2px 9px}
+.tdo-gh>i{width:8px;height:8px;border-radius:50%;background:var(--tc);box-shadow:0 0 9px var(--tc);flex:none}
+.tdo-gh>span{color:var(--mu);letter-spacing:.4px}
+.tdo-gh .btn{margin-left:auto;text-transform:none;letter-spacing:0}
+.tdo-list{display:flex;flex-direction:column;gap:6px}
+.tdo-it{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 11px;background:var(--inset);border:1px solid var(--ln);border-left:3px solid var(--tc);border-radius:9px;transition:background .15s,border-color .15s,opacity .15s}
+.tdo-it:hover{border-color:color-mix(in srgb,var(--tc) 45%,var(--ln));border-left-color:var(--tc)}
+.tdo-it.expired{background:color-mix(in srgb,var(--r) 7%,var(--inset))}
+.tdo-it.done{opacity:.72}
+.tdo-cb{flex:none;width:21px;height:21px;border-radius:50%;border:2px solid var(--tc);background:transparent;position:relative;padding:0;transition:transform .12s,background .15s}
+.tdo-cb:hover{transform:scale(1.12);background:color-mix(in srgb,var(--tc) 18%,transparent)}
+.tdo-cb.on{background:var(--g);border-color:var(--g);box-shadow:0 0 10px -2px var(--g)}
+.tdo-cb.on::after{content:'';position:absolute;left:5.5px;top:2px;width:4px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.tdo-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.tdo-tx{width:100%;background:transparent;border:1px solid transparent;border-radius:5px;padding:3px 6px;margin:-3px -6px;font-size:13px;font-weight:600;color:var(--tx);outline:none;text-overflow:ellipsis}
+.tdo-tx:hover{border-color:var(--ln)}
+.tdo-tx:focus{border-color:var(--focus);background:var(--p)}
+.tdo-it.done .tdo-tx{text-decoration:line-through;color:var(--dim)}
+.tdo-bar{height:3px;border-radius:2px;background:var(--ln2);overflow:hidden}
+.tdo-bar>i{display:block;height:100%;border-radius:2px;background:var(--tc);transition:width .3s}
+.tdo-due{position:relative;flex:none;display:flex}
+.tdo-chip{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;color:var(--tc);
+  background:color-mix(in srgb,var(--tc) 13%,transparent);border:1px solid color-mix(in srgb,var(--tc) 34%,transparent);transition:background .12s}
+.tdo-chip:hover{background:color-mix(in srgb,var(--tc) 24%,transparent)}
+.tdo-date{position:absolute;right:0;bottom:0;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
+.tdo-date.show{position:static;width:auto;height:auto;opacity:1;pointer-events:auto;background:var(--inset);border:1px solid var(--focus);border-radius:6px;padding:3px 6px;font-size:12px;color:var(--tx)}
+.tdo-empty{text-align:center;padding:22px 12px;color:var(--mu);font-size:12.5px;line-height:1.55}
+.tdo-empty>b{display:block;font-size:30px;margin-bottom:6px}
+.tdo-more{font-size:11.5px;color:var(--mu);text-align:center;padding:4px}
+.tdo-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.tbadge{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--r);color:#fff;font-size:10px;font-weight:800;line-height:1;vertical-align:1px}
+@media (max-width:760px){
+  .tdo-top{grid-template-columns:1fr 1fr}.tdo-top .title-card .big{font-size:28px}
+  .tdo-stats{grid-column:1/-1;grid-row:2;grid-template-columns:repeat(2,1fr)}
+  .tdo-row{flex-wrap:wrap}.tdo-row .qa{flex-basis:100%}.tdo-row input[type=date]{flex:1}
+  .tdo-it{flex-wrap:wrap}.tdo-main{flex-basis:calc(100% - 70px)}.tdo-it .del{order:2}.tdo-due{order:3;margin-left:31px}
+}
 @media (max-width:760px){
   .top{padding:8px 12px}
   .brand small{display:none}
@@ -463,6 +518,10 @@ function norm(Y){ // make sure a year object has every field
     if(typeof h.cat!=="string"||(h.cat&&!cids.has(h.cat)))h.cat=""});
   Y.weekly.forEach(w=>{if(!Array.isArray(w.months)||w.months.length!==12)w.months=Array(12).fill(1);
     w.goals=wGoals(w).map(v=>Math.max(0,Math.min(7,parseInt(v,10)||0)))}); // times per week, per week (see merge.js)
+  // to-dos: {id, text, due "YYYY-MM-DD" or "" (expiry date), done, c created ms, at done ms}
+  Y.todos=Array.isArray(Y.todos)?Y.todos.filter(t=>t&&typeof t.id==="string"):[];
+  Y.todos.forEach(t=>{t.text=String(t.text??"").slice(0,120);if(!/^\d{4}-\d{2}-\d{2}$/.test(t.due))t.due="";
+    t.done=!!t.done;if(!(+t.c>0))t.c=Date.now();t.at=+t.at||0});
   return Y;
 }
 
@@ -691,6 +750,7 @@ function viewMonth(m){
     <div class="wfoot"><form data-f="wquickadd" data-m="${m}" autocomplete="off"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a weekly habit" title="Type a weekly habit (e.g. Laundry) and press Enter" aria-label="Add a weekly habit"></form>
       ${W.act.length?`<button class="btn sm${wEdit?" pri":""}" data-act="wedit">${wEdit?"Done":"✎ Edit"}</button>`:""}</div></div>
   <div class="panel ringp"><div class="ringbox">${ring(W.p,"Weekly habits progress","#22c55e",true)}</div></div></div>`;
+  h+=tdMonth(y,m); // this month's to-dos, at the end of the page
   return h;
 }
 
@@ -704,6 +764,82 @@ function wCell(y,w,k,b){
 }
 const goalTxt=w=>{const vs=[...new Set(wGoals(w).filter((_,k)=>+w.months[Math.floor(k/5)]&&k%5<4))];if(!vs.length)return"—";
   const lo=Math.min(...vs),hi=Math.max(...vs);return lo===hi?(lo?`${lo}× a week`:"skipped"):`${lo}–${hi}× a week`};
+
+/* ================= to-dos: one list per year, each item with its own expiry date ================= */
+const TD_MAX=200;
+const ymd=(y,m,d)=>`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+const todayStr=()=>{const n=now();return ymd(n.y,n.m,n.d)};
+const dnum=s=>Math.round(Date.parse(s+"T00:00:00Z")/864e5); // day number, for differences in whole days
+const addDays=(s,k)=>new Date((dnum(s)+k)*864e5).toISOString().slice(0,10);
+const fmtDue=s=>{const[y,m,d]=s.split("-").map(Number);return`${d} ${MS[m-1]}${y!==now().y?" "+y:""}`};
+const TDG=[["expired","Expired","var(--r)"],["today","Due today","var(--y)"],["tomorrow","Tomorrow","var(--c)"],["week","Next 7 days","var(--v)"],
+  ["later","Later","var(--g)"],["someday","Someday","var(--mu)"],["done","Done","var(--g)"]]; // theme colours, so both modes keep their contrast
+const TDC=Object.fromEntries(TDG.map(([g,,c])=>[g,c]));
+function tdInfo(t){ // which group a to-do is in and what its chip says
+  if(t.done)return{g:"done",lab:t.at?`Done ${fmtDue(new Date(t.at-new Date(t.at).getTimezoneOffset()*6e4).toISOString().slice(0,10))}`:"Done"};
+  if(!t.due)return{g:"someday",lab:"No date"};
+  const k=dnum(t.due)-dnum(todayStr());
+  if(k<0)return{g:"expired",lab:k===-1?"Expired yesterday":`Expired ${-k} days ago`};
+  if(k===0)return{g:"today",lab:"Expires today"};
+  if(k===1)return{g:"tomorrow",lab:"Expires tomorrow"};
+  return{g:k<=7?"week":"later",lab:k<=45?`${k} days left`:`Expires ${fmtDue(t.due)}`};
+}
+const tdSort=(a,b)=>(a.due||"9999")<(b.due||"9999")?-1:(a.due||"9999")>(b.due||"9999")?1:a.c-b.c;
+function tdLeft(t){ // share of the time between adding it and its expiry that has gone by
+  if(t.done||!t.due)return null;const[y,m,d]=t.due.split("-").map(Number),end=new Date(y,m-1,d+1).getTime();
+  return end<=t.c?1:cl((Date.now()-t.c)/(end-t.c))}
+function tdItem(t){
+  const i=tdInfo(t),c=TDC[i.g],f=tdLeft(t),y=curY;
+  return`<div class="tdo-it ${i.g}" style="--tc:${c}">
+    <button class="tdo-cb${t.done?" on":""}" data-act="tdone" data-t="${t.id}" aria-pressed="${t.done}" aria-label="${t.done?"Mark not done":"Mark done"}: ${esc(t.text)}"></button>
+    <div class="tdo-main"><input class="tdo-tx" data-f="ttext" data-t="${t.id}" value="${esc(t.text)}" maxlength="120" aria-label="To-do">
+      ${f==null?"":`<div class="tdo-bar" title="${pc(f)} of the time until it expires has passed"><i style="width:${f1(f*100)}%"></i></div>`}</div>
+    <span class="tdo-due"><button class="tdo-chip" data-act="tdpick" data-t="${t.id}" title="${t.due?"Expires "+fmtDue(t.due)+" · click to change":"Set an expiry date"}">${esc(i.lab)}</button>
+      <input type="date" class="tdo-date" data-f="tdue" data-t="${t.id}" value="${t.due}" min="${y}-01-01" max="${y}-12-31" tabindex="-1" aria-label="Expiry date for ${esc(t.text)}"></span>
+    <button class="ib del" data-act="tdel" data-t="${t.id}" title="Delete" aria-label="Delete ${esc(t.text)}">✕</button></div>`;
+}
+function tdDefault(y,m){const n=now();if(y!==n.y)return m==null?"":ymd(y,m,1);if(m==null||m===n.m)return todayStr();return m<n.m?"":ymd(y,m,1)}
+function tdAddForm(def,compact){ // def: the expiry date the add box starts with
+  const y=curY;
+  return`<form class="tdo-add" data-f="todoadd" autocomplete="off"><div class="tdo-row">
+    <input class="qa" name="q" maxlength="120" placeholder="＋ Add a to-do${compact?"":" (renew passport, call the bank…)"}" aria-label="New to-do">
+    <input type="date" name="d" value="${def}" min="${y}-01-01" max="${y}-12-31" aria-label="Expires on" title="Expires on"></div>
+    ${compact?"":`<div class="tdo-quick"><span class="hint">Expires:</span>${[["today","Today"],["tomorrow","Tomorrow"],["weekend","This weekend"],["week","In a week"],["month","End of month"],["none","No date"]]
+      .map(([v,l])=>`<button type="button" class="tdo-q" data-act="tdq" data-v="${v}">${l}</button>`).join("")}</div>`}</form>`;
+}
+function tdGroups(list){const by={};for(const t of list)(by[tdInfo(t).g]||=[]).push(t);for(const g in by)by[g].sort(g==="done"?(a,b)=>b.at-a.at:tdSort);return by}
+function viewTodo(){
+  const y=curY,Y=years[y],T=Y.todos,by=tdGroups(T),n=(g)=>(by[g]||[]).length;
+  const done=n("done"),soon=n("today")+n("tomorrow")+n("week");
+  let h=`<div class="tdo"><div class="tdo-top">
+    <div class="panel title-card"><div class="big">To-do</div><div class="sub">- ${y} -</div></div>
+    <div class="panel tdo-stats">${[["Expired",n("expired"),"var(--r)"],["Due today",n("today"),"var(--y)"],["Next 7 days",soon-n("today"),"var(--v)"],["Done",done,"var(--g)"]]
+      .map(([l,v,c])=>`<div class="tdo-st" style="--sc:${c}"><b>${v}</b><span>${l}</span></div>`).join("")}</div>
+    <div class="panel ringp"><div class="ringbox">${ring(T.length?done/T.length:0,"Completed","#22c55e",true)}</div></div></div>
+  <div class="panel">${tdAddForm(tdDefault(y))}</div>`;
+  if(!T.length)h+=`<div class="panel tdo-empty"><b>🗒️</b>Nothing on your list for ${y} yet.<br>Add a to-do above and give it an expiry date. It counts down here, and turns red once it expires.</div>`;
+  for(const[g,label,c]of TDG){const L=by[g];if(!L)continue;
+    const clear=g==="done"||g==="expired"?`<button class="btn sm" data-act="tdclear" data-g="${g}">${g==="done"?"Clear done":"Clear expired"}</button>`:"";
+    h+=`<div class="panel" style="--tc:${c}"><div class="tdo-gh"><i></i>${label}<span>${L.length}</span>${clear}</div><div class="tdo-list">${L.map(tdItem).join("")}</div></div>`}
+  return h+`</div>`;
+}
+/* compact list at the end of a month's page (that month's to-dos) and on Today (expired + today) */
+function tdPanel(title,sub,list,def,max=8){
+  const L=[...list].sort((a,b)=>a.done-b.done||tdSort(a,b));
+  return`<div class="panel" style="margin-top:10px"><div class="ph">${title}<small>${sub}</small></div>
+    ${L.length?`<div class="tdo-list">${L.slice(0,max).map(tdItem).join("")}</div>${L.length>max?`<div class="tdo-more">+${L.length-max} more</div>`:""}`:`<div class="empty" style="padding:6px">Nothing expiring here.</div>`}
+    <div style="margin-top:10px">${tdAddForm(def,true)}</div>
+    <div class="tdo-foot"><button class="btn sm" data-act="tab" data-v="todo">All to-dos →</button></div></div>`;
+}
+function tdMonth(y,m){
+  const lo=dnum(ymd(y,m,1)),hi=dnum(ymd(y,m,dim(y,m))),n=now(),cur=y===n.y&&m===n.m;
+  const list=years[y].todos.filter(t=>(t.due&&dnum(t.due)>=lo&&dnum(t.due)<=hi)||(cur&&!t.done&&t.due&&dnum(t.due)<lo));
+  return tdPanel(`To-do · ${MONTHS[m]}`,cur?"expiring this month, plus anything already expired":"expiring this month",list,tdDefault(y,m));
+}
+function tdToday(y){
+  const ts=todayStr(),list=years[y].todos.filter(t=>t.due&&(t.due===ts||(!t.done&&t.due<ts)));
+  return list.length?tdPanel("To-dos for today","expiring today, plus anything already expired",list,ts,10):"";
+}
 
 /* Today: one-tap checklist for a single day (today by default; ‹ › steps back through this year) */
 function viewToday(){
@@ -730,6 +866,7 @@ function viewToday(){
   if(wk.length){const wd=sum(wk.map(w=>wDone(y,w,k))),wg=sum(wk.map(w=>wGoal(y,w,k)));
     h+=`<div class="panel"><div class="tgh" style="margin-top:0">${WK[b]} · weekly habits<span>${wd}/${wg}</span></div><div class="tlist">${wk.map(w=>{const g=wGoal(y,w,k),d=wDone(y,w,k),on=d>=g;
       return`<button class="tk${on?" on":""}" style="--bc:${WC[b]}" data-w="${w.id}" data-k="${k}" aria-pressed="${on}"><i class="cb${on?" on":d?" part":""}"></i><span class="tn">${esc(w.name||"Untitled")}</span>${g>1?`<span class="fire">${d}/${g} this week</span>`:""}</button>`}).join("")}</div></div>`}
+  h+=tdToday(y);
   h+=`<div class="tfoot"><button class="btn" data-act="tab" data-v="m${m}">${MONTHS[m]} dashboard →</button></div></div>`;
   return h;
 }
@@ -849,8 +986,9 @@ function viewPlanner(){
 function renderTabs(){
   const n=now(),el=$("#tabs");
   if(!ready||!years[curY]||mode==="auth"||mode==="pending"){el.innerHTML="";return}
-  const items=[...(curY===n.y?[["today","Today","#f0476a"]]:[]),["planner","Planner","#7a5ff8"],...MS.map((m,i)=>["m"+i,m,QC[Math.floor(i/3)]]),["annual","Annual","#22c55e"]];
-  el.innerHTML=items.map(([v,l,c])=>`<button class="tab${view===v?" on":""}${curY===n.y&&v==="m"+n.m?" now":""}" style="--tc:${c}" data-act="tab" data-v="${v}">${l}</button>`).join("");
+  const items=[...(curY===n.y?[["today","Today","#f0476a"]]:[]),["planner","Planner","#7a5ff8"],...MS.map((m,i)=>["m"+i,m,QC[Math.floor(i/3)]]),["todo","To-do","#ec4899"],["annual","Annual","#22c55e"]];
+  const due=(years[curY].todos||[]).filter(t=>{const g=tdInfo(t).g;return g==="expired"||g==="today"}).length; // red count on the To-do tab
+  el.innerHTML=items.map(([v,l,c])=>`<button class="tab${view===v?" on":""}${curY===n.y&&v==="m"+n.m?" now":""}" style="--tc:${c}" data-act="tab" data-v="${v}">${l}${v==="todo"&&due?`<span class="tbadge" aria-label="${due} expired or due today">${due}</span>`:""}</button>`).join("");
 }
 function renderYearSel(){
   const n=now(),ks=Object.keys(years).map(Number);const lo=Math.min(n.y,curY,...ks)-1,hi=Math.max(n.y,curY,...ks)+2;
@@ -866,7 +1004,7 @@ function render(){
   const Y=years[curY];
   if(!Y)app.innerHTML=viewSetup();
   else{norm(Y);if(view==="today"&&curY!==now().y)view=defaultView();
-    app.innerHTML=view==="planner"?viewPlanner():view==="annual"?viewAnnual():view==="today"?viewToday():viewMonth(+view.slice(1)||0)}
+    app.innerHTML=view==="planner"?viewPlanner():view==="annual"?viewAnnual():view==="todo"?viewTodo():view==="today"?viewToday():viewMonth(+view.slice(1)||0)}
   const els=[...document.querySelectorAll(".sx,.wcols")];
   if(els.length===sc.length)els.forEach((e,i)=>e.scrollLeft=sc[i]);
   else scrollToToday();
@@ -1188,7 +1326,9 @@ function makeYear(y,mode,from){
     weekly=F.weekly.map(w=>({id:w.id,name:w.name,months:fillLead(w.months).map(([,v])=>v?1:0),goals:Array(WSLOTS).fill(lastGoal(w))}));}
   else if(mode==="starter"){const ck={};cats=STARTER_C.map(([k,name,col])=>{const c={id:uid("c"),name,col};ck[k]=c.id;return c});
     habits=STARTER.map(([name,g,k])=>({id:uid("h"),name,cat:ck[k]||"",goals:G(m=>g==="all"?dim(y,m):Math.min(g,dim(y,m)))}));weekly=STARTER_W.map(name=>({id:uid("w"),name,months:G(()=>1),goals:Array(WSLOTS).fill(1)}))}
-  years[y]={v:1,year:y,carry,cats,habits,weekly,checks:{},wchecks:{},notes:Array(12).fill(""),updatedAt:Date.now()};
+  // a new year starts with last year's unfinished to-dos that had no expiry date; dated ones belong to their year
+  const todos=mode==="copy"&&years[from]?(years[from].todos||[]).filter(t=>!t.done&&!t.due).map(t=>({...t,c:Date.now()})):[];
+  years[y]={v:1,year:y,carry,cats,habits,weekly,todos,checks:{},wchecks:{},notes:Array(12).fill(""),updatedAt:Date.now()};
   touch(y);view=y===n.y?(narrow()?"today":"m"+n.m):"planner";if(!habits.length)view="planner";render();
   toast(mode==="copy"?`${y} is ready — habits carried over from ${from}`:`${y} is ready`);
 }
@@ -1277,6 +1417,17 @@ document.addEventListener("click",e=>{
     case"rtest":testRemind();break;
     case"wm":{const w=Y.weekly.find(w=>w.id===b.dataset.w);const m=+b.dataset.m;w.months[m]=+w.months[m]?0:1;touch();render();break}
     case"wgoal":openWGoal(b.dataset.w,+b.dataset.k);break;
+    case"tdone":{const t=Y.todos.find(x=>x.id===b.dataset.t);if(!t)break;t.done=!t.done;t.at=t.done?Date.now():0;touch();render();
+      if(t.done)toast(`✓ ${t.text.trim()||"To-do"} done`);break}
+    case"tdel":armDel(b,()=>{Y.todos=Y.todos.filter(x=>x.id!==b.dataset.t);touch();render()});break;
+    case"tdpick":{const i=b.parentElement.querySelector(".tdo-date");if(!i)break; // the chip opens the date picker
+      try{i.showPicker()}catch(_){i.classList.add("show");i.focus()}break}
+    case"tdq":{const f=b.closest("form"),d=tdQuick(b.dataset.v);if(d===null){toast(`That date isn't in ${curY}: this list is for ${curY}`);break}
+      f.d.value=d;f.querySelectorAll(".tdo-q").forEach(x=>x.classList.toggle("on",x===b));f.q.focus();break}
+    case"tdclear":{const g=b.dataset.g;
+      if(!b.dataset.armed){b.dataset.armed=1;const was=b.textContent;b.textContent="Tap again to clear";b.classList.add("pri");
+        setTimeout(()=>{if(b.isConnected){delete b.dataset.armed;b.textContent=was;b.classList.remove("pri")}},3000);break}
+      const k=Y.todos.length;Y.todos=Y.todos.filter(t=>tdInfo(t).g!==g);touch();render();toast(`Cleared ${k-Y.todos.length}`);break}
     case"wgsave":saveWGoal(b.dataset.w,+b.dataset.k);break;
     case"wgstep":{const i=$("#wgN");if(i)i.value=Math.max(0,Math.min(7,(parseInt(i.value,10)||0)+ +b.dataset.d));break}
     case"backup":openBackup();break;
@@ -1290,6 +1441,7 @@ document.addEventListener("click",e=>{
 document.addEventListener("keydown",e=>{
   if(e.key==="Enter"&&e.target.id==="wgN"){e.preventDefault();$('[data-act="wgsave"]')?.click();return} // Enter saves the weekly goal
   if((e.key==="Enter"||e.key===" ")&&e.target.matches(".wrow[data-w]")){e.preventDefault();e.target.click()} // weekly ticks work from the keyboard
+  if(e.key==="Enter"&&e.target.matches(".tdo-tx")){e.preventDefault();e.target.blur()} // Enter finishes renaming a to-do
 });
 document.addEventListener("input",e=>{
   const t=e.target,f=t.dataset.f;
@@ -1301,7 +1453,25 @@ document.addEventListener("input",e=>{
   else if(f==="cname"){const c=Y.cats.find(c=>c.id===t.dataset.c);if(c){c.name=t.value;touch();
     document.querySelectorAll(`select[data-f="hcat"] option[value="${c.id}"]`).forEach(o=>o.textContent=t.value||"Untitled")}}
   else if(f==="note"){Y.notes[+t.dataset.m]=t.value;touch()}
+  else if(f==="ttext"){const x=Y.todos.find(x=>x.id===t.dataset.t);if(x){x.text=t.value.slice(0,120);touch()}}
 });
+/* add a to-do (To-do tab, the end of a month's page, Today) */
+document.addEventListener("submit",e=>{
+  const f=e.target;if(f.dataset.f!=="todoadd")return;e.preventDefault();
+  const Y=years[curY];if(!Y)return;const text=(f.q.value||"").trim().slice(0,120);if(!text){f.q.focus();return}
+  if(Y.todos.length>=TD_MAX){toast(`Up to ${TD_MAX} to-dos a year: clear some done ones first`);return}
+  const d=f.d.value,due=/^\d{4}-\d{2}-\d{2}$/.test(d)&&d.startsWith(curY+"-")?d:"";
+  Y.todos.push({id:uid("t"),text,due,done:false,c:Date.now(),at:0});touch();
+  const keep=due;render();
+  const nf=document.querySelector('form[data-f="todoadd"]');if(nf){nf.d.value=keep;nf.q.focus({preventScroll:true})} // ready for the next one
+  toast(due?`Added · expires ${fmtDue(due)}`:"Added");
+});
+function tdQuick(v){ // quick expiry choices; null when it falls outside the year being shown
+  const ts=todayStr(),n=now(),dow=new Date(n.y,n.m,n.d).getDay();
+  const d=v==="today"?ts:v==="tomorrow"?addDays(ts,1):v==="weekend"?addDays(ts,dow===6?0:(6-dow)):v==="week"?addDays(ts,7)
+    :v==="month"?ymd(n.y,n.m,dim(n.y,n.m)):"";
+  return d&&!d.startsWith(curY+"-")?null:d;
+}
 /* quick add from a month's tracker: the habit starts this month and runs every day from here on */
 document.addEventListener("submit",e=>{
   const f=e.target;if(f.dataset.f!=="wquickadd")return;e.preventDefault();
@@ -1331,6 +1501,9 @@ document.addEventListener("change",e=>{
   if(t.id==="ysel"){setYear(+t.value);return}
   if(t.id==="rf"){const file=t.files&&t.files[0];if(file)file.text().then(txt=>{$("#rs").value=txt})}
   if(t.dataset.f==="carry"){years[curY].carry=t.value==="1";touch();toast("Saved")}
+  if(t.dataset.f==="tdue"){const x=years[curY].todos.find(x=>x.id===t.dataset.t);
+    if(x){const v=t.value;x.due=/^\d{4}-\d{2}-\d{2}$/.test(v)&&v.startsWith(curY+"-")?v:"";touch();render();toast(x.due?`Expires ${fmtDue(x.due)}`:"Expiry date removed")}}
+  if(t.dataset.f==="todoadd"||t.name==="d"&&t.closest('form[data-f="todoadd"]'))t.closest("form").querySelectorAll(".tdo-q").forEach(x=>x.classList.remove("on"));
   if(t.dataset.f==="hcat"){const h=findH(t.dataset.h);if(h){h.cat=t.value;touch();render()}}
   if(t.id==="rOn")enableRemind(t.checked);
   if(t.id==="rTime"&&/^\d\d:\d\d$/.test(t.value)){const r=getRemind();r.time=t.value;setRemind(r);try{localStorage.removeItem(RKEY+"-last")}catch(e){}

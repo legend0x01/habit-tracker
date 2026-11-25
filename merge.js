@@ -38,6 +38,9 @@ function mergeYear(B,L,R){
   o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),cat:pick(b?b.cat??"":null,l.cat??"",r.cat??""),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i]))}));
   o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i])),
     goals:((bg,rg)=>wGoals(l).map((v,i)=>pick(bg&&bg[i],v,rg[i])))(b?wGoals(b):null,wGoals(r))}));
+  // to-dos: text, expiry date and done merge separately, so a tick on one device and a new date on another both survive
+  if(L.todos||R.todos)o.todos=mergeList(B&&B.todos,L.todos||[],R.todos||[],(b,l,r)=>({...r,...l,text:pick(b&&b.text,l.text,r.text),due:pick(b?b.due??"":null,l.due??"",r.due??""),
+    done:pick(b?!!b.done:null,!!l.done,!!r.done),at:pick(b?b.at??0:null,l.at??0,r.at??0)}));
   o.checks=mergeBitsMap(B&&B.checks,L.checks,R.checks,new Set(o.habits.map(h=>h.id)));
   o.wchecks=mergeBitsMap(B&&B.wchecks,L.wchecks,R.wchecks,new Set(o.weekly.map(w=>w.id)));
   o.notes=L.notes.map((t,i)=>pick(B&&B.notes&&B.notes[i],t,R.notes[i],true));
