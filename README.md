@@ -41,6 +41,7 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Weekly habits** for things you do once a week (laundry, meal prep, calling family); add, rename or delete them right from the month view
 - **Categories and colours**: group daily habits (Health, Study, Work…) and give each group a colour; the tick grid is grouped by category and the charts use its colour
 - **Daily reminder**: a notification at the time you choose, only on days when some habits are still unticked. Signed in, it arrives even when the app is closed (Web Push)
+- **To-do list** for each year, every item with its own expiry date: grouped into Expired, Today, Tomorrow, Next 7 days, Later and Someday, with countdown chips and a bar showing how much time is left. Each month's page ends with that month's to-dos, and Today shows what's expired or due
 - **Notes** for each month: wins, reflections, plans
 
 **Understand**

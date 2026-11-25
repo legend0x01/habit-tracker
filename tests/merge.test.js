@@ -100,6 +100,23 @@ test("mergeYear(): weekly goals merge week by week; old copies without goals mea
   assert.equal(M2.weekly[0].name, "Gym session");
 });
 
+test("mergeYear(): to-dos merge item by item and field by field", () => {
+  const td = (id, text, due = "", extra = {}) => ({ id, text, due, done: false, c: 1, at: 0, ...extra });
+  const B = year({ todos: [td("t1", "Renew passport", "2026-12-10"), td("t2", "Call bank")] });
+  const L = copy(B); L.todos[0].done = true; L.todos[0].at = 99; L.todos.push(td("t3", "Buy gift", "2026-12-20"));
+  const R = copy(B); R.todos[0].due = "2026-12-15"; R.todos = R.todos.filter(t => t.id !== "t2"); R.todos.push(td("t4", "Book flights"));
+  const M = mergeYear(B, L, R);
+  assert.deepEqual(M.todos.map(t => t.id).sort(), ["t1", "t3", "t4"], "additions on both sides kept, deletion sticks");
+  const t1 = M.todos.find(t => t.id === "t1");
+  assert.equal(t1.done, true, "ticked here");
+  assert.equal(t1.at, 99);
+  assert.equal(t1.due, "2026-12-15", "new expiry from the other device");
+
+  const old = year(); delete old.todos; // a copy saved before to-dos existed
+  const M2 = mergeYear(old, year({ todos: [td("t1", "New")] }), copy(old));
+  assert.deepEqual(M2.todos.map(t => t.id), ["t1"]);
+});
+
 test("mergeYear(): category edits from both devices survive", () => {
   const B = year({ cats: [{ id: "c1", name: "Health", col: "#22c55e" }], habits: [habit("h1", "Run")] });
   const L = copy(B); L.habits[0].cat = "c1";
