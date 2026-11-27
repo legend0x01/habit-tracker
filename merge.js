@@ -35,7 +35,9 @@ function mergeYear(B,L,R){
   o.carry=pick(B&&B.carry,L.carry,R.carry);
   // a base habit/category saved before categories existed has no cat/col field: treat it as "" so it still counts as shared history
   o.cats=mergeList(B&&B.cats,L.cats||[],R.cats||[],(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),col:pick(b?b.col??"":null,l.col,r.col)}));
-  o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),cat:pick(b?b.cat??"":null,l.cat??"",r.cat??""),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i]))}));
+  // days: the weekdays a habit repeats on (bitmask, missing = every day = 127)
+  o.habits=mergeList(B&&B.habits,L.habits,R.habits,(b,l,r)=>{const x={...r,...l,name:pick(b&&b.name,l.name,r.name),cat:pick(b?b.cat??"":null,l.cat??"",r.cat??""),goals:l.goals.map((g,i)=>pick(b&&b.goals[i],g,r.goals[i])),
+    days:pick(b?b.days??127:null,l.days??127,r.days??127)};if(x.days===127)delete x.days;return x});
   o.weekly=mergeList(B&&B.weekly,L.weekly,R.weekly,(b,l,r)=>({...r,...l,name:pick(b&&b.name,l.name,r.name),months:l.months.map((v,i)=>pick(b&&b.months[i],v,r.months[i])),
     goals:((bg,rg)=>wGoals(l).map((v,i)=>pick(bg&&bg[i],v,rg[i])))(b?wGoals(b):null,wGoals(r))}));
   // to-dos: text, expiry date and done merge separately, so a tick on one device and a new date on another both survive

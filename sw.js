@@ -1,7 +1,7 @@
 /* Habit Tracker service worker: lets the app install, open offline and show reminder notifications.
    Bump VERSION when the precache list changes. Pages and scripts on this site are fetched network-first,
    so a normal deploy reaches users on their next visit without a version bump. */
-const VERSION = "ht-v8";
+const VERSION = "ht-v9";
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js";
 const PRECACHE = [
   "./", "index.html", "merge.js", "sound.js", "config.js", "quotes.json", "manifest.webmanifest",

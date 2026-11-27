@@ -28,13 +28,21 @@ export function isDue(sub, now) {
   return now.hh * 60 + now.mm >= h * 60 + m && sub.last_sent !== now.day;
 }
 
+/* the weekdays a daily habit repeats on: bitmask, bit 0 = Sunday … bit 6 = Saturday; missing = every day */
+export const hDays = h => { const v = +(h && h.days); return Number.isInteger(v) && v > 0 && v < 127 ? v : 127; };
+/* is the habit on for day-of-year i of year y (i may be negative = last year) */
+export const onDay = (h, y, i) => ((hDays(h) >> new Date(Date.UTC(y, 0, 1 + i)).getUTCDay()) & 1) === 1;
+
+/* daily habits active this month and on this weekday */
+const activeToday = (data, y, m, i) =>
+  data.habits.filter(h => h && Array.isArray(h.goals) && (+h.goals[m] || 0) > 0 && onDay(h, y, i));
+
 /* today's active daily habits that aren't ticked; null when that year isn't set up */
 export function leftToday(data, y, m, d) {
   if (!data || !Array.isArray(data.habits)) return null;
   const i = Math.round((Date.UTC(y, m, d) - Date.UTC(y, 0, 1)) / 864e5);
   const checks = data.checks && typeof data.checks === "object" ? data.checks : {};
-  return data.habits.filter(h => h && Array.isArray(h.goals) && (+h.goals[m] || 0) > 0 &&
-    String(checks[h.id] || "").charCodeAt(i) !== 49);
+  return activeToday(data, y, m, i).filter(h => String(checks[h.id] || "").charCodeAt(i) !== 49);
 }
 
 /* everything the reminder copy needs about today: unticked habits, how many are active, and each habit's
@@ -45,11 +53,14 @@ export function todayStatus(data, y, m, d) {
   const i = Math.round((Date.UTC(y, m, d) - Date.UTC(y, 0, 1)) / 864e5);
   const lo = data.carry === false ? Math.round((Date.UTC(y, m, 1) - Date.UTC(y, 0, 1)) / 864e5) : 0;
   const checks = data.checks && typeof data.checks === "object" ? data.checks : {};
-  const total = data.habits.filter(h => h && Array.isArray(h.goals) && (+h.goals[m] || 0) > 0).length;
-  const streakOf = h => {
+  const total = activeToday(data, y, m, i).length;
+  const streakOf = h => { // a day the habit isn't on doesn't break the streak
     const s = String(checks[h.id] || "");
     let n = 0;
-    for (let k = i - 1; k >= lo && s.charCodeAt(k) === 49; k--) n++;
+    for (let k = i - 1; k >= lo; k--) {
+      if (s.charCodeAt(k) === 49) n++;
+      else if (onDay(h, y, k)) break;
+    }
     return n;
   };
   return { left, total, streakOf };

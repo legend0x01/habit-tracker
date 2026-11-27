@@ -146,3 +146,16 @@ test("mergeYear(): no-op merge, newest updatedAt, inputs untouched", () => {
   assert.equal(M.updatedAt, 70);
   assert.deepEqual([B, L, R], before);
 });
+
+test("mergeYear(): a habit's repeat days merge like its other fields", () => {
+  const B = year({ habits: [habit("h1", "Gym"), habit("h2", "Read", { days: 42 })] });
+  const L = copy(B); L.habits[0].days = 42;            // this device: Gym only Mon/Wed/Fri
+  const R = copy(B); R.habits[1].name = "Read 20 pages"; // cloud: renamed Read, days untouched
+  const M = mergeYear(B, L, R);
+  assert.equal(M.habits[0].days, 42, "a days change on this device survives");
+  assert.equal(M.habits[1].days, 42, "untouched days are kept");
+  assert.equal(M.habits[1].name, "Read 20 pages");
+  const L2 = copy(B); delete L2.habits[1].days;          // back to every day here
+  const M2 = mergeYear(B, L2, copy(B));
+  assert.ok(!("days" in M2.habits[1]), "every day is stored as no days field");
+});

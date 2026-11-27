@@ -73,7 +73,8 @@ a.btn{color:var(--tx);text-decoration:none;display:inline-block}
 .tabs::-webkit-scrollbar{display:none}
 .tab{background:var(--p);border:1px solid var(--ln);border-bottom:none;color:var(--mu);padding:8px 15px;border-radius:9px 9px 0 0;font-weight:700;white-space:nowrap;font-size:12px;position:relative;transition:.15s}
 .tab:hover{color:var(--hi)}
-.tab.on{color:var(--hi);background:var(--p2);box-shadow:inset 0 3px 0 var(--tc)}
+.tab.on{color:var(--hi);background:var(--p2)}
+.tab.on::before{content:'';position:absolute;left:12px;right:12px;top:0;height:3px;border-radius:0 0 3px 3px;background:var(--tc)}
 .tab.now::after{content:'';position:absolute;top:6px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--r)}
 main{padding:14px 18px 50px;border-top:1px solid var(--ln);max-width:1760px;margin:0 auto}
 
@@ -164,6 +165,7 @@ table.trk{border-collapse:separate;border-spacing:0;width:100%;min-width:max-con
 .cb.on{background:var(--bc);opacity:1;box-shadow:0 0 9px -2px var(--bc)}
 .cb.on::after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
 td.c.fut .cb{opacity:.3}
+td.c.off .cb{opacity:.13;border-style:dashed} /* a day this habit isn't on */
 td.c:hover .cb{transform:scale(1.18);opacity:1}
 .b0{--bc:#1fb0d4}.b1{--bc:#22c06e}.b2{--bc:#7a5ff8}.b3{--bc:#eab308}.b4{--bc:#ef4466}
 .trk .pc{padding:0 6px 0 12px;color:var(--tx2);font-weight:700;border-left:1px solid var(--ln)}
@@ -347,6 +349,22 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
 .tk.on{background:color-mix(in srgb,var(--bc) 13%,var(--p));border-color:color-mix(in srgb,var(--bc) 35%,var(--ln))}
 .tk.on .tn{color:var(--mu)}
 .tk .fire{font-size:12px;font-weight:700;white-space:nowrap}
+.tk .tn small{display:block;font-size:10.5px;font-weight:600;color:var(--mu);margin-top:2px;letter-spacing:.2px}
+.toff{text-align:center;margin-top:8px}
+/* Repeat picker: presets as pills, single days as round chips */
+.tadd{margin-top:10px}
+.rep{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}
+.rpl{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--mu);margin-right:2px}
+.rp,.rd{background:var(--inset);border:1px solid var(--ln);color:var(--mu);font-weight:700;font-size:11.5px;transition:background .12s,border-color .12s,color .12s;-webkit-tap-highlight-color:transparent}
+.rp{border-radius:999px;padding:5px 11px}
+.rds{display:flex;gap:4px}
+.rd{width:30px;height:30px;border-radius:50%;padding:0;display:grid;place-items:center}
+.rp:hover,.rd:hover{border-color:var(--bd);color:var(--tx)}
+.rp.on,.rd.on{color:var(--hi);background:color-mix(in srgb,var(--g) 22%,var(--p2));border-color:color-mix(in srgb,var(--g) 60%,var(--ln))}
+.rp:focus-visible,.rd:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.mbox .rep{margin:12px 0 6px}
+.chip.prep{white-space:nowrap;border-style:solid}
+.chip.prep.on{color:var(--hi);border-color:color-mix(in srgb,var(--g) 60%,var(--ln))}
 .tfoot{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:2px 0 8px}
 /* ---------- account ---------- */
 .acctb{display:flex;align-items:center;gap:8px;background:none;border:0;padding:2px 4px;border-radius:8px}
@@ -432,7 +450,15 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
   .top{padding:8px 12px}
   .brand small{display:none}
   main{padding:10px 10px 40px}
-  .tabs{padding:10px 10px 0}
+  /* phones: the tabs become a scrolling row of pill chips; the active one is tinted with its own colour */
+  .tabs{gap:6px;padding:10px 12px;scroll-padding:0 12px;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+  main{border-top:none;padding-top:4px}
+  .tab{border:1px solid var(--ln);border-radius:999px;padding:7px 14px;font-size:12.5px;background:var(--p)}
+  .tab.on{background:color-mix(in srgb,var(--tc) 20%,var(--p2));border-color:color-mix(in srgb,var(--tc) 60%,var(--ln));
+    box-shadow:0 2px 10px -4px color-mix(in srgb,var(--tc) 70%,transparent)}
+  .tab.on::before{display:none}
+  .tab.now::after{top:4px;right:8px}
   .mgrid,.agrid{grid-template-columns:1fr;grid-template-areas:"title" "rings" "chart" "info" "top" "streak"}
   .agrid{grid-template-areas:"title" "rings" "metrics" "chart" "top"}
   .rings{grid-template-columns:repeat(2,1fr);row-gap:14px}
@@ -533,7 +559,8 @@ function norm(Y){ // make sure a year object has every field
   Y.cats.forEach((c,i)=>{c.name=String(c.name??"");if(!HEX.test(c.col))c.col=PAL[i%PAL.length]}); // colours go into style attributes: hex only
   const cids=new Set(Y.cats.map(c=>c.id));
   Y.habits.forEach(h=>{if(!Array.isArray(h.goals)||h.goals.length!==12)h.goals=MS.map((_,m)=>dim(Y.year,m));
-    if(typeof h.cat!=="string"||(h.cat&&!cids.has(h.cat)))h.cat=""});
+    if(typeof h.cat!=="string"||(h.cat&&!cids.has(h.cat)))h.cat="";
+    if("days" in h){const v=hDays(h);if(v===ALLD)delete h.days;else h.days=v}}); // weekdays it repeats on (see hDays)
   Y.weekly.forEach(w=>{if(!Array.isArray(w.months)||w.months.length!==12)w.months=Array(12).fill(1);
     w.goals=wGoals(w).map(v=>Math.max(0,Math.min(7,parseInt(v,10)||0)))}); // times per week, per week (see merge.js)
   // to-dos: {id, text, due "YYYY-MM-DD" or "" (expiry date), done, c created ms, at done ms}
@@ -567,31 +594,47 @@ const isToday=(y,m,d)=>{const n=now();return y===n.y&&m===n.m&&d===n.d};
 const habitsIn=(y,m)=>years[y].habits.filter(h=>(+h.goals[m]||0)>0);
 const weeklyIn=(y,m)=>years[y].weekly.filter(w=>+w.months[m]);
 
+/* which weekdays a daily habit repeats on: h.days is a bitmask, bit 0 = Sunday … bit 6 = Saturday.
+   Missing (or 127) = every day. A day it isn't on doesn't count against it, and doesn't break its streak. */
+const ALLD=127,DAYORD=[1,2,3,4,5,6,0],DAY1="SMTWTFS",DAY3=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const hDays=h=>{const v=+(h&&h.days);return Number.isInteger(v)&&v>0&&v<ALLD?v:ALLD};
+const onMask=(dm,y,i)=>(dm>>new Date(y,0,1+i).getDay()&1)===1; // i = day of year (may run into last year)
+const onDay=(h,y,i)=>onMask(hDays(h),y,i);
+const habitsOn=(y,i)=>habitsIn(y,new Date(y,0,1+i).getMonth()).filter(h=>onDay(h,y,i));
+function schedIn(dm,y,m,from=1){let c=0;for(let d=from;d<=dim(y,m);d++)if(dm>>new Date(y,m,d).getDay()&1)c++;return c} // days it's on in a month
+function daysLabel(dm){
+  if(dm===ALLD)return"Every day";if(dm===62)return"Weekdays";if(dm===65)return"Weekends";
+  return DAYORD.filter(j=>dm>>j&1).map(j=>DAY3[j]).join(" · ")}
+
 function dayRatio(y,i){
   while(i<0){y--;if(!years[y])return null;i+=ylen(y)}
   if(!years[y])return null;
-  const m=new Date(y,0,1+i).getMonth();const act=habitsIn(y,m);if(!act.length)return null;
+  const act=habitsOn(y,i);if(!act.length)return null;
   let c=0;for(const h of act)if(isChk(y,h.id,i))c++;return c/act.length;
 }
 function momentum(y,i){let s=0,n=0;for(let k=0;k<7;k++){const r=dayRatio(y,i-k);if(r!=null){s+=r;n++}}return n?s/n:0}
 function streak(y,hid,m,ref){
   if(!ref)return 0;let i=doy(y,m,ref);
   if(isToday(y,m,ref)&&!isChk(y,hid,i))i--;
+  const dm=hDays(years[y].habits.find(h=>h.id===hid));
   const lo=years[y].carry===false?doy(y,m,1):-4000;let c=0;
-  while(i>=lo&&c<4000&&isChk(y,hid,i)){c++;i--}
+  // a tick adds to the streak; an unticked day only breaks it if the habit was on that day
+  for(let k=0;i>=lo&&k<4000;k++,i--){if(isChk(y,hid,i))c++;else if(dm===ALLD||onMask(dm,y,i))break}
   return c;
 }
 function monthStats(y,m){
   const n=dim(y,m),s0=doy(y,m,1),ref=refDay(y,m),act=habitsIn(y,m);
-  const daily=new Array(n+1).fill(0);
+  const daily=new Array(n+1).fill(0),sch=new Array(n+1).fill(0); // ticks per day, habits on per day
+  for(let d=1;d<=n;d++)for(const h of act)if(onDay(h,y,s0+d-1))sch[d]++;
   const rows=act.map(h=>{let c=0;for(let d=1;d<=n;d++)if(isChk(y,h.id,s0+d-1)){c++;daily[d]++}
     const g=+h.goals[m];return{h,c,g,p:g?c/g:0,st:streak(y,h.id,m,ref)}});
   const goal=sum(rows.map(r=>r.g)),done=sum(rows.map(r=>Math.min(r.c,r.g)));
-  const wk=[];for(let b=0;b<nb(y,m);b++){const d0=b*7+1,d1=b<4?b*7+7:n;let c=0;for(let d=d0;d<=d1;d++)c+=daily[d];const g=act.length*(d1-d0+1);wk.push({b,d0,d1,c,g,p:g?c/g:0})}
+  const span=(a,b,arr)=>{let s=0;for(let d=a;d<=b;d++)s+=arr[d];return s};
+  const wk=[];for(let b=0;b<nb(y,m);b++){const d0=b*7+1,d1=b<4?b*7+7:n,c=span(d0,d1,daily),g=span(d0,d1,sch);wk.push({b,d0,d1,c,g,p:g?cl(c/g):0})}
   let dailyP=0,weekP=0,mom=0;
-  if(ref&&act.length){dailyP=daily[ref]/act.length;const w=wk[bk(ref)];let c=0;for(let d=w.d0;d<=ref;d++)c+=daily[d];weekP=c/(act.length*(ref-w.d0+1));}
+  if(ref&&act.length){dailyP=sch[ref]?cl(daily[ref]/sch[ref]):1;const w=wk[bk(ref)],g=span(w.d0,ref,sch);weekP=g?cl(span(w.d0,ref,daily)/g):1;}
   if(ref)mom=momentum(y,s0+ref-1);
-  return{n,s0,ref,act,rows,daily,goal,done,rem:Math.max(0,goal-done),wk,dailyP,weekP,monthP:goal?done/goal:0,mom};
+  return{n,s0,ref,act,rows,daily,sch,goal,done,rem:Math.max(0,goal-done),wk,dailyP,weekP,monthP:goal?done/goal:0,mom};
 }
 function wStats(y,m){
   const act=weeklyIn(y,m),B=nb(y,m),cols=[];
@@ -714,7 +757,7 @@ function viewMonth(m){
     <div class="panel metric"><div class="ml">Completed</div><div class="mv g">${S.done}</div></div>
     <div class="panel metric"><div class="ml">Remaining</div><div class="mv r">${S.rem}</div></div>
   </div>
-  <div class="panel a-chart"><div class="ph">Daily progress</div>${lineChart(S.daily.slice(1).map(c=>S.act.length?c/S.act.length:0),S.ref)}</div>
+  <div class="panel a-chart"><div class="ph">Daily progress</div>${lineChart(S.daily.slice(1).map((c,i)=>S.sch[i+1]?cl(c/S.sch[i+1]):0),S.ref)}</div>
   <div class="panel a-streak"><div class="ph">Active streaks</div>${hbars(strk.map((r,i)=>({label:r.h.name,val:r.st,frac:r.st/maxSt,col:hcol(Y,r.h,PAL[(i+1)%5])})),"No active streaks yet — tick today's habits!")}</div>
   </div>`;
 
@@ -730,10 +773,10 @@ function viewMonth(m){
   const groups=catGroups(Y,S.rows),showG=groups.some(g=>g.c);
   for(const g of groups){
     if(showG)h+=`<tr class="cgh"><td class="hn" colspan="2"><i class="cdot" style="--cc:${g.c?g.c.col:"var(--dim)"}"></i>${esc(g.c?g.c.name||"Untitled":"Other")}</td><td colspan="${S.n+4}"></td></tr>`;
-    for(const r of g.rows){const col=g.c&&g.c.col,bc=col?` style="--bc:${col}"`:"";
-      h+=`<tr><td class="hn${hnCol(col)}" title="${esc(r.h.name)}">${esc(r.h.name)}</td><td class="hg">${r.g}</td>`;
-      for(let d=1;d<=S.n;d++){const i=S.s0+d-1,on=isChk(y,r.h.id,i),fut=S.ref<d;
-        h+=`<td class="c b${bk(d)}${fut?" fut":""}${isToday(y,m,d)?" tdc":""}${d%7===0&&d<S.n&&d<=28?" wend":""}"${bc} data-h="${r.h.id}" data-i="${i}"><i class="cb${on?" on":""}"></i></td>`}
+    for(const r of g.rows){const col=g.c&&g.c.col,bc=col?` style="--bc:${col}"`:"",dm=hDays(r.h);
+      h+=`<tr><td class="hn${hnCol(col)}" title="${esc(r.h.name)}${dm<ALLD?" · "+daysLabel(dm):""}">${esc(r.h.name)}</td><td class="hg">${r.g}</td>`;
+      for(let d=1;d<=S.n;d++){const i=S.s0+d-1,on=isChk(y,r.h.id,i),fut=S.ref<d,off=dm<ALLD&&!onMask(dm,y,i);
+        h+=`<td class="c b${bk(d)}${fut?" fut":""}${off&&!on?" off":""}${isToday(y,m,d)?" tdc":""}${d%7===0&&d<S.n&&d<=28?" wend":""}"${bc} data-h="${r.h.id}" data-i="${i}"><i class="cb${on?" on":""}"></i></td>`}
       h+=`<td class="pc">${r.c}/${r.g}</td><td class="pb"><div class="bar"><i style="width:${f1(cl(r.p)*100)}%;background:${pcol(r.p)}"></i></div></td><td class="pp">${pc(r.p)}</td><td class="ps"><span class="fire${r.st?"":" z"}">${r.st?"🔥 "+r.st:"0"}</span></td></tr>`;
     }
   }
@@ -744,7 +787,7 @@ function viewMonth(m){
 
   // ---- overview + notes ----
   h+=`<div class="ogrid"><div class="panel"><div class="ph">Overview<small>daily completion % — coloured by week</small></div>
-    ${barChart(S.daily.slice(1).map((c,i)=>({v:S.act.length?c/S.act.length:0,col:WC[bk(i+1)],lab:i+1,top:""})),{max:1,H:150,W:1100})}
+    ${barChart(S.daily.slice(1).map((c,i)=>({v:S.sch[i+1]?cl(c/S.sch[i+1]):0,col:WC[bk(i+1)],lab:i+1,top:""})),{max:1,H:150,W:1100})}
     <div class="sx"><table class="wtbl"><tr><th></th>${S.wk.map(w=>`<th style="background:${WH[w.b]}">${WK[w.b]}</th>`).join("")}</tr>
     <tr><td>Completed</td>${S.wk.map(w=>`<td>${w.c}</td>`).join("")}</tr>
     <tr><td>Goal</td>${S.wk.map(w=>`<td>${w.g}</td>`).join("")}</tr>
@@ -860,10 +903,16 @@ function tdToday(y){
 }
 
 /* Today: one-tap checklist for a single day (today by default; ‹ › steps back through this year) */
+/* the "Repeat" picker: Every day, Weekdays, or tap single days (under Today's add box, and in the Planner's repeat dialog) */
+let newDays=ALLD,hdDays=ALLD; // picker state: Today's add box, the Planner dialog
+function repChips(v){
+  const pre=(x,l)=>`<button type="button" class="rp${v===x?" on":""}" data-act="rday" data-v="${x}" aria-pressed="${v===x}">${l}</button>`;
+  return`<span class="rpl">Repeat</span>${pre(ALLD,"Every day")}${pre(62,"Weekdays")}<span class="rds">${DAYORD.map(j=>{const on=v!==ALLD&&(v>>j&1)===1;
+    return`<button type="button" class="rd${on?" on":""}" data-act="rday" data-j="${j}" aria-pressed="${on}" aria-label="${DAY3[j]}" title="${DAY3[j]}">${DAY1[j]}</button>`}).join("")}</span>`}
 function viewToday(){
   const y=curY,Y=years[y],n=now(),ti=doy(n.y,n.m,n.d),i=tday==null?ti:Math.max(0,Math.min(ti,tday));
   const dt=new Date(y,0,1+i),m=dt.getMonth(),d=dt.getDate(),b=bk(d);
-  const rows=habitsIn(y,m).map(h=>({h,on:isChk(y,h.id,i),st:streak(y,h.id,m,d)}));
+  const rows=habitsOn(y,i).map(h=>({h,on:isChk(y,h.id,i),st:streak(y,h.id,m,d)})),offN=habitsIn(y,m).length-rows.length;
   const done=rows.filter(r=>r.on).length,tot=rows.length,p=tot?done/tot:0;
   const label=i===ti?"Today":i===ti-1?"Yesterday":dt.toLocaleDateString(undefined,{weekday:"long"});
   const msg=!tot?"":done===tot?"All done 🎉":`${tot-done} to go`;
@@ -877,10 +926,12 @@ function viewToday(){
   const groups=catGroups(Y,rows),showG=groups.some(g=>g.c);
   for(const g of groups){
     if(showG)h+=`<div class="tgh"><i class="cdot" style="--cc:${g.c?g.c.col:"var(--dim)"}"></i>${esc(g.c?g.c.name||"Untitled":"Other")}<span>${g.rows.filter(r=>r.on).length}/${g.rows.length}</span></div>`;
-    for(const r of g.rows)h+=`<button class="tk${r.on?" on":""}" style="--bc:${g.c?g.c.col:"#22c06e"}" data-h="${r.h.id}" data-i="${i}" aria-pressed="${r.on}"><i class="cb${r.on?" on":""}"></i><span class="tn">${esc(r.h.name||"Untitled")}</span>${r.st?`<span class="fire">🔥 ${r.st}</span>`:""}</button>`;
+    for(const r of g.rows){const dm=hDays(r.h);h+=`<button class="tk${r.on?" on":""}" style="--bc:${g.c?g.c.col:"#22c06e"}" data-h="${r.h.id}" data-i="${i}" aria-pressed="${r.on}"><i class="cb${r.on?" on":""}"></i><span class="tn">${esc(r.h.name||"Untitled")}${dm<ALLD?`<small>${daysLabel(dm)}</small>`:""}</span>${r.st?`<span class="fire">🔥 ${r.st}</span>`:""}</button>`}
   }
-  if(!tot)h+=`<div class="empty">No daily habits for ${MONTHS[m]} yet. Add one below.</div>`;
-  h+=`</div><form data-f="quickadd" data-m="${m}" autocomplete="off" style="margin-top:10px"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a habit" aria-label="Add a daily habit"></form></div>`;
+  if(!tot)h+=`<div class="empty">${offN?`Nothing scheduled for ${label==="Today"?"today":"this day"}. Enjoy the rest day.`:`No daily habits for ${MONTHS[m]} yet. Add one below.`}</div>`;
+  if(tot&&offN)h+=`<div class="hint toff">${offN} more habit${offN===1?"":"s"} not scheduled for this day</div>`;
+  h+=`</div><form data-f="quickadd" data-m="${m}" autocomplete="off" class="tadd"><input class="qa" name="q" maxlength="60" placeholder="＋ Add a habit" aria-label="Add a daily habit">
+    <div class="rep" role="group" aria-label="Repeat on">${repChips(newDays)}</div></form></div>`;
   const k=m*5+b,wk=weeklyIn(y,m).filter(w=>wGoal(y,w,k)>0);
   if(wk.length){const wd=sum(wk.map(w=>wDone(y,w,k))),wg=sum(wk.map(w=>wGoal(y,w,k)));
     h+=`<div class="panel"><div class="tgh" style="margin-top:0">${WK[b]} · weekly habits<span>${wd}/${wg}</span></div><div class="tlist">${wk.map(w=>{const g=wGoal(y,w,k),d=wDone(y,w,k),on=d>=g;
@@ -970,13 +1021,14 @@ function viewPlanner(){
   h+=`</div><div class="row"><button class="btn" data-act="addc">＋ Add category</button>${sug.length?`<span class="hint">or add</span>${sug.map(s=>`<button class="chip" data-act="addc" data-name="${s}">${s}</button>`).join("")}`:""}</div></div>`;
 
   const hasC=Y.cats.length>0;
-  h+=`<div class="panel"><div class="ph">Daily habits &amp; monthly goals<small>Goal = how many days you aim to do it that month. Set 0 to switch a habit off for a month.</small></div><div class="sx"><table class="plan"><thead><tr><th class="hn">Daily habits</th>${hasC?`<th style="background:var(--p2);color:var(--tx)">Category</th>`:""}`;
+  h+=`<div class="panel"><div class="ph">Daily habits &amp; monthly goals<small>Goal = how many days you aim to do it that month. Set 0 to switch a habit off for a month.</small></div><div class="sx"><table class="plan"><thead><tr><th class="hn">Daily habits</th><th style="background:var(--p2);color:var(--tx)">Repeat</th>${hasC?`<th style="background:var(--p2);color:var(--tx)">Category</th>`:""}`;
   MS.forEach((_,m)=>h+=`<th style="background:${QH[Math.floor(m/3)]};min-width:62px">${MONTHS[m]}</th>`);
-  h+=`<th class="tot">Total</th><th></th></tr><tr class="dlr"><th class="hn" style="background:var(--p)"></th>${hasC?`<th style="background:var(--p)"></th>`:""}`;
+  h+=`<th class="tot">Total</th><th></th></tr><tr class="dlr"><th class="hn" style="background:var(--p)"></th><th style="background:var(--p)"></th>${hasC?`<th style="background:var(--p)"></th>`:""}`;
   MS.forEach((_,m)=>{const dl=y===n.y&&m===n.m?dim(y,m)-n.d:(refDay(y,m)?0:dim(y,m));h+=`<th style="background:${QH[Math.floor(m/3)]}aa">Days left ${dl}</th>`});
   h+=`<th class="tot"></th><th></th></tr></thead><tbody>`;
   Y.habits.forEach((hb,k)=>{
-    h+=`<tr><td class="hn${hnCol(hcol(Y,hb,""))}"><input data-f="hname" data-h="${hb.id}" value="${esc(hb.name)}" placeholder="Habit name" maxlength="60"></td>`;
+    h+=`<tr><td class="hn${hnCol(hcol(Y,hb,""))}"><input data-f="hname" data-h="${hb.id}" value="${esc(hb.name)}" placeholder="Habit name" maxlength="60"></td>
+      <td style="padding:0 6px"><button class="chip prep${hDays(hb)<ALLD?" on":""}" data-act="hdays" data-h="${hb.id}" title="Choose the days it repeats on">${daysLabel(hDays(hb))}</button></td>`;
     if(hasC)h+=`<td style="padding:0 6px"><select data-f="hcat" data-h="${hb.id}" aria-label="Category for ${esc(hb.name)}"><option value="">—</option>${Y.cats.map(c=>`<option value="${c.id}"${hb.cat===c.id?" selected":""}>${esc(c.name||"Untitled")}</option>`).join("")}</select></td>`;
     MS.forEach((_,m)=>h+=`<td class="${+hb.goals[m]?"":"zero"}"><input type="number" min="0" max="${dim(y,m)}" data-f="hgoal" data-h="${hb.id}" data-m="${m}" value="${+hb.goals[m]||0}"></td>`);
     h+=`<td class="tot" id="pt-${hb.id}">${sum(hb.goals.map(g=>+g||0))}</td><td class="act">
@@ -984,8 +1036,8 @@ function viewPlanner(){
       <button class="ib" data-act="moveh" data-h="${hb.id}" data-d="-1" title="Move up"${k?"":" disabled"}>↑</button>
       <button class="ib" data-act="moveh" data-h="${hb.id}" data-d="1" title="Move down"${k<Y.habits.length-1?"":" disabled"}>↓</button>
       <button class="ib del" data-act="delh" data-h="${hb.id}" title="Delete habit">✕</button></td></tr>`});
-  if(!Y.habits.length)h+=`<tr><td colspan="${hasC?16:15}" class="empty">No daily habits yet — add your first one below.</td></tr>`;
-  h+=`</tbody><tfoot><tr><td class="hn">Total</td>${hasC?"<td></td>":""}${mt.map((v,m)=>`<td id="pm-${m}">${v}</td>`).join("")}<td id="pall">${sum(mt)}</td><td></td></tr></tfoot></table></div>
+  if(!Y.habits.length)h+=`<tr><td colspan="${hasC?17:16}" class="empty">No daily habits yet — add your first one below.</td></tr>`;
+  h+=`</tbody><tfoot><tr><td class="hn">Total</td><td></td>${hasC?"<td></td>":""}${mt.map((v,m)=>`<td id="pm-${m}">${v}</td>`).join("")}<td id="pall">${sum(mt)}</td><td></td></tr></tfoot></table></div>
     <div class="row"><button class="btn pri" data-act="addh">＋ Add daily habit</button><button class="btn" data-act="fillall">Set every habit to every day</button>
     <span class="hint">${Y.habits.length} daily habits · ⟳ = every day of every month · up to 50 habits</span></div></div>`;
 
@@ -1229,7 +1281,7 @@ paintRemindBtn();
 const dayKey=()=>{const n=now();return`${n.y}-${n.m+1}-${n.d}`};
 function leftToday(){ // today's active daily habits that aren't ticked; null if this year isn't set up
   const n=now();if(!years[n.y])return null;const i=doy(n.y,n.m,n.d);
-  return habitsIn(n.y,n.m).filter(h=>!isChk(n.y,h.id,i));
+  return habitsOn(n.y,i).filter(h=>!isChk(n.y,h.id,i));
 }
 function remindText(left){
   if(!left||!left.length)return"All of today's habits are done. Nice work!";
@@ -1244,7 +1296,7 @@ function deviceSeed(){ // the push server seeds with the end of the endpoint, so
 function remindMsg(left){
   if(!COPY)return{title:"Habit Tracker",body:remindText(left)};
   const n=now();
-  return COPY.reminderMessage({left,total:habitsIn(n.y,n.m).length,streakOf:h=>streak(n.y,h.id,n.m,n.d),
+  return COPY.reminderMessage({left,total:habitsOn(n.y,doy(n.y,n.m,n.d)).length,streakOf:h=>streak(n.y,h.id,n.m,n.d),
     day:`${n.y}-${String(n.m+1).padStart(2,"0")}-${String(n.d).padStart(2,"0")}`,seed:deviceSeed(),hour:new Date().getHours()});
 }
 async function notify({title,body}){
@@ -1356,7 +1408,9 @@ function makeYear(y,mode,from){
   if(mode==="copy"&&years[from]){const F=norm(years[from]);carry=F.carry!==false;cats=clone(F.cats);
     // months a habit hadn't started yet (leading zeros, e.g. you began mid-year) are filled with its latest goal
     const fillLead=arr=>{const first=arr.findIndex(v=>+v>0);if(first<=0)return arr.map((v,m)=>[m,+v||0]);const ref=[...arr].reverse().find(v=>+v>0);const refM=11-[...arr].reverse().findIndex(v=>+v>0);return arr.map((v,m)=>m<first?[refM,+ref]:[m,+v||0])};
-    habits=F.habits.map(h=>({id:h.id,name:h.name,cat:h.cat||"",goals:fillLead(h.goals).map(([sm,g],m)=>g>=dim(from,sm)?dim(y,m):Math.min(g,dim(y,m)))}));
+    // a habit on certain weekdays keeps them; its goal is the number of those days in each month it's on
+    habits=F.habits.map(h=>{const dm=hDays(h);return{id:h.id,name:h.name,cat:h.cat||"",...(dm<ALLD?{days:dm}:{}),
+      goals:fillLead(h.goals).map(([sm,g],m)=>dm<ALLD?(g>0?schedIn(dm,y,m):0):g>=dim(from,sm)?dim(y,m):Math.min(g,dim(y,m)))}});
     // a weekly habit starts the new year with the goal it had in its last active week
     const lastGoal=w=>{const g=wGoals(w);for(let k=WSLOTS-1;k>=0;k--)if(+w.months[Math.floor(k/5)]&&k%5<4&&+g[k]>0)return+g[k];return 1};
     weekly=F.weekly.map(w=>({id:w.id,name:w.name,months:fillLead(w.months).map(([,v])=>v?1:0),goals:Array(WSLOTS).fill(lastGoal(w))}));}
@@ -1369,6 +1423,28 @@ function makeYear(y,mode,from){
   toast(mode==="copy"?`${y} is ready — habits carried over from ${from}`:`${y} is ready`);
 }
 function findH(id){return years[curY].habits.find(h=>h.id===id)}
+
+/* ---------- which days a daily habit repeats on (Planner) ---------- */
+function openHDays(hid){
+  const h=findH(hid);if(!h)return;hdDays=hDays(h);const m=$("#modal"),n=now();
+  const from=curY===n.y?`${MONTHS[n.m]} on`:`every month of ${curY}`;
+  m.classList.remove("hidden");
+  m.innerHTML=`<div class="mbox" role="dialog" aria-labelledby="hdT"><h3 id="hdT">Repeat · ${esc(h.name||"Untitled")}</h3>
+  <p>Pick the days you want to do it. Days it's off don't count against your score or break your streak.</p>
+  <div class="rep" role="group" aria-label="Repeat on">${repChips(hdDays)}</div>
+  <p class="hint">Monthly goals for ${from} become the number of those days. Months switched off (0) stay off.</p>
+  <div class="row"><span style="flex:1"></span><button class="btn" data-act="closem">Cancel</button><button class="btn pri" data-act="hdsave" data-h="${h.id}">Save</button></div></div>`;
+  m.querySelector(".rp.on,.rd.on")?.focus();
+}
+function saveHDays(hid){
+  const y=curY,h=findH(hid);if(!h)return;const dm=hdDays,n=now();
+  if(dm<ALLD)h.days=dm;else delete h.days;
+  MS.forEach((_,m)=>{if(!(+h.goals[m]))return;
+    if(y===n.y&&m<n.m)return; // past months keep their goal
+    if(y===n.y&&m===n.m){let done=0;const s0=doy(y,m,1);for(let d=1;d<n.d;d++)if(isChk(y,h.id,s0+d-1))done++;h.goals[m]=Math.min(dim(y,m),done+schedIn(dm,y,m,n.d));return}
+    h.goals[m]=schedIn(dm,y,m)});
+  touch(y);$("#modal").classList.add("hidden");render();toast(`${h.name||"Habit"} · ${daysLabel(dm)}`);
+}
 
 /* ---------- weekly goals: change one week, this week and the ones after, or every week ---------- */
 function wSlotNow(y,w){ // the week a goal change starts from when opened from the Planner: this week, else the first active week
@@ -1412,7 +1488,7 @@ function updPlanTotals(){const Y=years[curY];const mt=MS.map((_,m)=>sum(Y.habits
 document.addEventListener("click",e=>{
   const cell=e.target.closest("td.c[data-h],.tk[data-h]");
   if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h,v=!isChk(y,hid,i);setChk(y,hid,i,v);touch();render();
-    if(v){const hs=habitsIn(y,new Date(y,0,1+i).getMonth());HTSound.play(hs.length>1&&hs.every(h=>isChk(y,h.id,i))?"allDone":"check")}else HTSound.play("uncheck");
+    if(v){const hs=habitsOn(y,i);HTSound.play(hs.length>1&&hs.every(h=>isChk(y,h.id,i))?"allDone":"check")}else HTSound.play("uncheck");
     if(cell.classList.contains("tk"))document.querySelector(`.tk[data-h="${hid}"]`)?.focus({preventScroll:true});return} // keep keyboard focus on the row
   const wr=e.target.closest(".wrow[data-w],.tk[data-w]");
   if(wr){const k=+wr.dataset.k,wid=wr.dataset.w,w=years[curY].weekly.find(x=>x.id===wid);if(!w)return;
@@ -1440,8 +1516,15 @@ document.addEventListener("click",e=>{
       const inp=document.querySelector(`input[data-f="hname"][data-h="${h.id}"]`);if(inp)inp.focus();break}
     case"delh":armDel(b,()=>{Y.habits=Y.habits.filter(h=>h.id!==b.dataset.h);delete Y.checks[b.dataset.h];touch();render()});break;
     case"moveh":{const i=Y.habits.findIndex(h=>h.id===b.dataset.h),j=i+ +b.dataset.d;if(j<0||j>=Y.habits.length)break;[Y.habits[i],Y.habits[j]]=[Y.habits[j],Y.habits[i]];touch();render();break}
-    case"fillh":{const h=findH(b.dataset.h);h.goals=MS.map((_,m)=>dim(curY,m));touch();render();break}
-    case"fillall":Y.habits.forEach(h=>h.goals=MS.map((_,m)=>(curY===n.y&&m<n.m&&!(+h.goals[m]))?0:dim(curY,m)));touch();render();toast("Every habit set to every day");break;
+    case"rday":{const inM=!!b.closest(".mbox"),cur=inM?hdDays:newDays,j=b.dataset.j;
+      // from "Every day", tapping a day starts a fresh pick with just that day; un-picking the last day goes back to every day
+      let v=j!=null?(cur===ALLD?1<<+j:cur^(1<<+j)):+b.dataset.v;if(!v)v=ALLD;
+      if(inM)hdDays=v;else newDays=v;
+      const r=b.closest(".rep");if(r){r.innerHTML=repChips(v);r.querySelector(j!=null?`[data-j="${j}"]`:`[data-v="${b.dataset.v}"]`)?.focus({preventScroll:true})}break}
+    case"hdays":openHDays(b.dataset.h);break;
+    case"hdsave":saveHDays(b.dataset.h);break;
+    case"fillh":{const h=findH(b.dataset.h);h.goals=MS.map((_,m)=>dim(curY,m));delete h.days;touch();render();break}
+    case"fillall":Y.habits.forEach(h=>{h.goals=MS.map((_,m)=>(curY===n.y&&m<n.m&&!(+h.goals[m]))?0:dim(curY,m));delete h.days});touch();render();toast("Every habit set to every day");break;
     case"addw":{const w={id:uid("w"),name:"",months:MS.map((_,m)=>curY===n.y&&m<n.m?0:1),goals:Array(WSLOTS).fill(1)};Y.weekly.push(w);touch();render();const inp=document.querySelector(`input[data-f="wname"][data-w="${w.id}"]`);if(inp)inp.focus();break}
     case"delw":armDel(b,()=>{Y.weekly=Y.weekly.filter(w=>w.id!==b.dataset.w);delete Y.wchecks[b.dataset.w];touch();render()});break;
     case"addc":{if(Y.cats.length>=20){toast("Up to 20 categories");break}
@@ -1530,9 +1613,11 @@ document.addEventListener("submit",e=>{
   if(Y.habits.length>=50){toast("Up to 50 daily habits");return}
   if(Y.habits.some(h=>h.name.trim().toLowerCase()===name.toLowerCase()&&(+h.goals[+f.dataset.m]||0)>0)){toast(`"${name}" is already on your list`);return}
   const m=+f.dataset.m,n=now(),thisMonth=curY===n.y&&m===n.m;
-  // in the current month the goal is the days still left (incl. today), so it stays reachable
-  Y.habits.push({id:uid("h"),name,goals:MS.map((_,i)=>i<m?0:i===m&&thisMonth?dim(curY,i)-n.d+1:dim(curY,i))});
-  touch();render();toast(`Added "${name}"`);
+  const dm=f.querySelector(".rep")?newDays:ALLD;newDays=ALLD; // the picker goes back to "Every day" for the next one
+  // the goal is the number of days it's on; in the current month only from today, so it stays reachable
+  Y.habits.push({id:uid("h"),name,...(dm<ALLD?{days:dm}:{}),goals:MS.map((_,i)=>i<m?0:schedIn(dm,curY,i,i===m&&thisMonth?n.d:1))});
+  touch();render();
+  toast(dm===ALLD?`Added "${name}" · every day`:`Added "${name}" · ${daysLabel(dm)}${view==="today"&&!(dm>>new Date().getDay()&1)?" · not on today's list":""}`,3200);
   const inp=document.querySelector(".qa");if(inp)inp.focus({preventScroll:true}); // ready for the next one
 });
 document.addEventListener("change",e=>{

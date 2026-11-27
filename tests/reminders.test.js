@@ -42,6 +42,20 @@ test("leftToday(): only today's active, unticked daily habits", async () => {
   assert.deepEqual(leftToday({ habits: [habit("a", "Run")], checks: { a: ticked } }, 2026, 10, 24), [], "all done");
 });
 
+test("leftToday()/todayStatus(): habits on certain weekdays", async () => {
+  const { leftToday, todayStatus } = await load();
+  // 24 Nov 2026 is a Tuesday (day-of-year 327); Mon/Wed/Fri = bits 1,3,5 = 42
+  const data = { habits: [habit("a", "Run"), { ...habit("g", "Gym"), days: 42 }], checks: {} };
+  assert.deepEqual(leftToday(data, 2026, 10, 24).map(h => h.id), ["a"], "Gym isn't on Tuesdays");
+  assert.deepEqual(leftToday(data, 2026, 10, 25).map(h => h.id), ["a", "g"], "but it is on Wednesday");
+  assert.equal(todayStatus(data, 2026, 10, 24).total, 1);
+  // ticked Mon 23 and Fri 20, not Sat/Sun: the weekend doesn't break Gym's streak
+  const s = "0".repeat(323) + "1" + "00" + "1";
+  const st = todayStatus({ ...data, checks: { g: s, a: s } }, 2026, 10, 24); // streaks up to yesterday (Mon)
+  assert.equal(st.streakOf(data.habits[1]), 2, "Gym: Mon + Fri, weekend skipped");
+  assert.equal(st.streakOf(data.habits[0]), 1, "Run (every day): broken by Sunday");
+});
+
 test("reminderText(): same wording as the in-app reminder", async () => {
   const { reminderText } = await load();
   assert.equal(reminderText([habit("a", "Run")]), '"Run" is still open today.');
