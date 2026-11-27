@@ -43,6 +43,8 @@ streaks, Google sign-in and real-time cloud sync. No framework, no build step.
 - **Daily reminder**: a notification at the time you choose, only on days when some habits are still unticked. Signed in, it arrives even when the app is closed (Web Push)
 - **To-do list** for each year, every item with its own expiry date: grouped into Expired, Today, Tomorrow, Next 7 days, Later and Someday, with countdown chips and a bar showing how much time is left. Each month's page ends with that month's to-dos, and Today shows what's expired or due
 - **Notes** for each month: wins, reflections, plans
+- **Thought of the day**: a new quote every day under the month name and on Today, from thousands of lines by Marcus Aurelius, Seneca, Epictetus, the Dhammapada, Laozi, Confucius, La Rochefoucauld, Pascal, Nietzsche, Emerson, Thoreau and more, tagged Stoic, Mindfulness, Realisation, Motivating or Wisdom
+- **Sounds**: a soft click on every tap, a rising chime for ticking a habit and a flourish for finishing the day; switch them off with 🔊
 
 **Understand**
 - **Progress rings**: momentum (7-day rolling), daily, weekly and monthly completion
@@ -216,6 +218,8 @@ Lets the daily reminder arrive when the app is closed. Without it, reminders wor
 
 ```text
 ├── index.html            the app: UI, charts, sync
+├── quotes.json           thoughts of the day, already in day order (built by scripts/build_quotes.py)
+├── sound.js              UI sounds, synthesised with Web Audio (no audio files)
 ├── merge.js              three-way merge used when two devices edited the same year
 ├── config.js             Supabase URL + publishable key, optional UPI ID
 ├── manifest.webmanifest  app name, icons and colours for installing
@@ -223,6 +227,7 @@ Lets the daily reminder arrive when the app is closed. Without it, reminders wor
 ├── supabase/schema.sql   tables, row-level security policies, realtime, account deletion
 ├── supabase/functions/send-reminders/   Edge Function that sends push reminders
 ├── supabase/reminders-cron.sql          runs it every 5 minutes (pg_cron)
+├── scripts/build_quotes.py   builds quotes.json from the sources below
 ├── tests/                node --test suites (merge logic, offline cache, reminder rules)
 ├── support.html          "buy me a coffee" page (UPI QR)
 ├── privacy.html          privacy policy (needed for Google sign-in)
@@ -252,6 +257,10 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) to get starte
 ## ☕ Support
 
 If this project helps you, you can [buy me a coffee](https://legend0x01.github.io/habit-tracker/support.html) via UPI. A ⭐ on the repo helps too.
+
+## 📜 Thought of the day sources
+
+Quotes are taken word for word from public-domain translations on [Project Gutenberg](https://www.gutenberg.org): Marcus Aurelius, *Meditations* (George Long); Epictetus, *Golden Sayings* (Hastings Crossley) and *Enchiridion* (T. W. Higginson); Seneca, *Minor Dialogues* (Aubrey Stewart) and *Morals of a Happy Life* (Roger L'Estrange); *The Dhammapada* (F. Max Müller); Laozi, *Tao Te Ching* (James Legge); Confucius, *Analects* (James Legge); La Rochefoucauld, *Maxims*; Pascal, *Pensées* (1958 Dutton edition); Nietzsche, *Beyond Good and Evil* (Helen Zimmern); Schopenhauer, *Counsels and Maxims* (T. Bailey Saunders); Emerson, *Essays, First Series*; Thoreau, *Walden*. More come from the [Quotable](https://github.com/lukePeavey/quotable) collection, limited to philosophers and great writers. Only each author's own text is used, never a translator's introduction or notes. A local model chose the lines that stand on their own; `scripts/quote_scores.json` keeps its ratings so the file can be rebuilt without it.
 
 ## 📄 License
 

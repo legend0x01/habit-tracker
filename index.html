@@ -23,7 +23,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital@1&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#08121f;--p:#0e1e33;--p2:#12284a;--p3:#163259;--ln:#1a3352;--ln2:#14294a;--ln3:#132b47;--ln4:#1d3a5c;
@@ -85,6 +85,18 @@ main{padding:14px 18px 50px;border-top:1px solid var(--ln);max-width:1760px;marg
 .title-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:118px}
 .title-card .big{font-size:34px;font-weight:500;letter-spacing:.5px}
 .title-card .sub{font-size:10px;letter-spacing:2px;color:var(--mu);margin-top:12px;font-weight:700}
+/* thought of the day */
+.thought{margin:12px 0 0;text-align:center;min-height:72px;animation:thIn .5s ease both}
+.thought[data-day]{animation:none}
+.thought figcaption{display:inline-flex;align-items:center;gap:7px;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--qc)}
+.thought figcaption::before,.thought figcaption::after{content:"";width:16px;height:1px;background:currentColor;opacity:.55}
+.thought blockquote{margin:8px 0 0;font-family:'Newsreader',Georgia,'Times New Roman',serif;font-style:italic;font-size:15px;line-height:1.45;color:var(--tx2);text-wrap:pretty}
+.thought blockquote::before{content:"\201C"}.thought blockquote::after{content:"\201D"}
+.thought cite{display:block;margin-top:8px;font-style:normal;font-size:11px;font-weight:700;color:var(--mu);letter-spacing:.2px}
+.thought cite span{font-weight:500;opacity:.85}
+.tthought{padding:16px 18px}.tthought .thought{margin:0;min-height:0}.tthought blockquote{font-size:17px}
+@keyframes thIn{from{opacity:0;transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){.thought{animation:none}}
 .info{width:100%;border-collapse:collapse;font-size:11.5px}
 .info td{padding:5px 6px;border-bottom:1px solid var(--ln2)}
 .info td:first-child{color:var(--mu);text-align:right;width:52%}
@@ -431,6 +443,10 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
   .status{order:5;width:100%}
   .acct .nm{display:none}
 }
+@media (max-width:430px){ /* keep the header to two rows on phones */
+  .top{gap:6px}.top .btn{padding-left:9px;padding-right:9px}.top .tbtn{padding:5px 7px}
+}
+@media (max-width:380px){#support .lbl{display:none}}
 </style>
 </head>
 <body>
@@ -442,8 +458,9 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
   <button class="btn ghost" data-act="backup">Backup</button>
   <button id="installBtn" class="btn ghost hidden" data-act="install" title="Install Habit Tracker on this device">⬇ Install</button>
   <button id="remindBtn" class="btn ghost tbtn" data-act="remind" title="Daily reminder" aria-label="Daily reminder">🔕</button>
+  <button id="soundBtn" class="btn ghost tbtn" data-act="sound" title="Turn sounds off" aria-label="Turn sounds off">🔊</button>
   <button id="themeBtn" class="btn ghost tbtn" data-act="theme" title="Switch theme" aria-label="Switch theme"></button>
-  <a id="support" class="btn ghost hidden" href="support.html" style="text-decoration:none" title="Support this project">☕ Support</a>
+  <a id="support" class="btn ghost hidden" href="support.html" style="text-decoration:none" title="Support this project" aria-label="Support this project">☕<span class="lbl"> Support</span></a>
   <div id="acct" class="acct"></div>
 </header>
 <nav id="tabs" class="tabs"></nav>
@@ -452,6 +469,7 @@ table.plan{border-collapse:separate;border-spacing:0;width:100%;min-width:max-co
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script src="merge.js"></script>
+<script src="sound.js"></script>
 <script src="config.js"></script>
 <script>
 /* ================= constants & helpers ================= */
@@ -686,7 +704,7 @@ function viewMonth(m){
   const top=[...S.rows].sort((a,b)=>b.p-a.p||b.c-a.c).slice(0,5);
   const strk=[...S.rows].filter(r=>r.st>0).sort((a,b)=>b.st-a.st).slice(0,10),maxSt=Math.max(1,...strk.map(r=>r.st));
   let h=`<div class="mgrid">
-  <div class="panel title-card a-title"><div class="big">${MONTHS[m]}</div><div class="sub">- HABIT TRACKER -</div></div>
+  <div class="panel title-card a-title"><div class="big">${MONTHS[m]}</div>${thought(thoughtDay(y,m,isCur?n.d:1))}</div>
   <div class="panel a-rings rings">${ring(S.mom,"Momentum","#1fb5e0")}${ring(S.dailyP,"Daily progress","#22c55e")}${ring(S.weekP,"Weekly progress","#22c55e")}${ring(S.monthP,"Monthly progress","#22c55e")}</div>
   <div class="panel a-top"><div class="ph">Top habits</div>${hbars(top.map((r,i)=>({label:r.h.name,val:r.c,frac:r.p,col:hcol(Y,r.h,PAL[i%5])})),"Tick some habits to see your top 5")}</div>
   <div class="stack a-info">
@@ -854,6 +872,7 @@ function viewToday(){
     <div class="tdt"><div class="tdl">${label}</div><div class="tds">${dt.toLocaleDateString(undefined,{weekday:"long"})}, ${d} ${MONTHS[m]}</div></div>
     <button class="ib tnav" data-act="tday" data-d="1"${i<ti?"":" disabled"} aria-label="Next day" title="Next day">›</button></div>`;
   h+=`<div class="panel tsum"><div class="tbig">${done}<small> / ${tot}</small></div><div class="bar" role="progressbar" aria-valuenow="${Math.round(p*100)}" aria-valuemin="0" aria-valuemax="100" aria-label="Habits done"><i style="width:${f1(p*100)}%;background:${pcol(p)}"></i></div><div class="tmsg">${msg}</div></div>`;
+  h+=`<div class="panel tthought">${thought(thoughtDay(y,m,d))}</div>`;
   h+=`<div class="panel"><div class="tlist">`;
   const groups=catGroups(Y,rows),showG=groups.some(g=>g.c);
   for(const g of groups){
@@ -1031,11 +1050,28 @@ let user=null,mode=SB_ON?"pending":"guest",synced=false,chan=null,saving=false,t
 let wEdit=false; // monthly dashboard: weekly habits edit mode
 let tday=null; // Today view: day-of-year being shown, null = today
 let deleting=false; // account deletion in progress: hold back cloud saves
+/* ---------- thought of the day ----------
+   quotes.json (built by scripts/build_quotes.py) is already in day order: one per calendar day, the same thought
+   for everyone on the same date, starting with the first one on 27 Nov 2026 and wrapping round after the last. */
+var TH=null,TH_BASE=Date.UTC(2026,10,27)/864e5,TH_COL=["var(--c)","var(--g)","var(--v)","var(--fire)","var(--y)"]; // var: a render before this line runs shows the placeholder
+function thoughtDay(y,m,d){return Date.UTC(y,m,d)/864e5}
+function thought(day){
+  if(!TH)return`<figure class="thought" data-day="${day}"></figure>`; // filled in when quotes.json arrives
+  const n=TH.q.length,[t,s,c]=TH.q[((day-TH_BASE)%n+n)%n],[a,w]=TH.src[s];
+  return`<figure class="thought" style="--qc:${TH_COL[c]||"var(--mu)"}"><figcaption>${esc(TH.cats[c])}</figcaption>
+    <blockquote>${esc(t)}</blockquote><cite>${esc(a)}${w?`<span> · ${esc(w)}</span>`:""}</cite></figure>`;
+}
+fetch("quotes.json").then(r=>r.ok?r.json():Promise.reject(new Error(r.status))).then(d=>{TH=d;
+  document.querySelectorAll(".thought[data-day]").forEach(el=>{el.outerHTML=thought(+el.dataset.day)})})
+  .catch(e=>console.warn("Thought of the day not loaded",e));
+
 /* ---------- theme ---------- */
 function paintThemeBtn(){const l=document.documentElement.dataset.theme==="light",b=$("#themeBtn");b.textContent=l?"🌙":"☀️";b.title=l?"Switch to dark mode":"Switch to light mode";b.setAttribute("aria-label",b.title)}
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("ht-theme",t)}catch(e){}
   $('meta[name=theme-color]').content=t==="light"?"#f2f5fa":"#08121f";paintThemeBtn()}
 paintThemeBtn();
+function paintSoundBtn(){const on=HTSound.on(),b=$("#soundBtn");b.textContent=on?"🔊":"🔇";b.title=on?"Turn sounds off":"Turn sounds on";b.setAttribute("aria-label",b.title)}
+paintSoundBtn();
 function setStatus(kind,txt){const el=$("#status");el.style.setProperty("--dot",{cloud:"#22c55e",local:"#eab308",saving:"#1fb5e0",err:"#f0476a",load:"#8ea2bb"}[kind]);el.textContent=txt}
 function touch(y=curY){years[y].updatedAt=Date.now();saveLocal();dirty.add(y);
   if(mode!=="cloud"){setStatus("local","Saved in this browser");return}
@@ -1375,12 +1411,14 @@ function updPlanTotals(){const Y=years[curY];const mt=MS.map((_,m)=>sum(Y.habits
 
 document.addEventListener("click",e=>{
   const cell=e.target.closest("td.c[data-h],.tk[data-h]");
-  if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h;setChk(y,hid,i,!isChk(y,hid,i));touch();render();
+  if(cell){const y=curY,i=+cell.dataset.i,hid=cell.dataset.h,v=!isChk(y,hid,i);setChk(y,hid,i,v);touch();render();
+    if(v){const hs=habitsIn(y,new Date(y,0,1+i).getMonth());HTSound.play(hs.length>1&&hs.every(h=>isChk(y,h.id,i))?"allDone":"check")}else HTSound.play("uncheck");
     if(cell.classList.contains("tk"))document.querySelector(`.tk[data-h="${hid}"]`)?.focus({preventScroll:true});return} // keep keyboard focus on the row
   const wr=e.target.closest(".wrow[data-w],.tk[data-w]");
   if(wr){const k=+wr.dataset.k,wid=wr.dataset.w,w=years[curY].weekly.find(x=>x.id===wid);if(!w)return;
     const g=wGoal(curY,w,k);if(!g)return;const d=wDone(curY,w,k);
     setW(curY,wid,k,d>=g?0:d+1);touch();render(); // each tap counts one more; past the goal it starts again at 0
+    HTSound.play(d>=g?"uncheck":d+1>=g?"check":"step");
     document.querySelector(`${wr.classList.contains("tk")?".tk":".wrow"}[data-w="${wid}"][data-k="${k}"]`)?.focus({preventScroll:true});return}
   const b=e.target.closest("[data-act]");if(!b)return;
   const act=b.dataset.act,Y=years[curY],n=now();
@@ -1417,7 +1455,7 @@ document.addEventListener("click",e=>{
     case"rtest":testRemind();break;
     case"wm":{const w=Y.weekly.find(w=>w.id===b.dataset.w);const m=+b.dataset.m;w.months[m]=+w.months[m]?0:1;touch();render();break}
     case"wgoal":openWGoal(b.dataset.w,+b.dataset.k);break;
-    case"tdone":{const t=Y.todos.find(x=>x.id===b.dataset.t);if(!t)break;t.done=!t.done;t.at=t.done?Date.now():0;touch();render();
+    case"tdone":{const t=Y.todos.find(x=>x.id===b.dataset.t);if(!t)break;t.done=!t.done;t.at=t.done?Date.now():0;touch();render();HTSound.play(t.done?"check":"uncheck");
       if(t.done)toast(`✓ ${t.text.trim()||"To-do"} done`);break}
     case"tdel":armDel(b,()=>{Y.todos=Y.todos.filter(x=>x.id!==b.dataset.t);touch();render()});break;
     case"tdpick":{const i=b.parentElement.querySelector(".tdo-date");if(!i)break; // the chip opens the date picker
@@ -1432,6 +1470,7 @@ document.addEventListener("click",e=>{
     case"wgstep":{const i=$("#wgN");if(i)i.value=Math.max(0,Math.min(7,(parseInt(i.value,10)||0)+ +b.dataset.d));break}
     case"backup":openBackup();break;
     case"wedit":wEdit=!wEdit;render();if(wEdit){const i=document.querySelector(".wedit input");if(i)i.focus({preventScroll:true})}break;
+    case"sound":{const on=HTSound.toggle();paintSoundBtn();if(on)HTSound.play("check");toast(on?"Sounds on":"Sounds off");break}
     case"theme":setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");break;
     case"closem":$("#modal").classList.add("hidden");break;
     case"copyjson":{const t=$("#bk");t.select();(navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("Backup copied"),()=>{try{document.execCommand("copy");toast("Backup copied")}catch(_){toast("Select the text and copy it manually")}});break}

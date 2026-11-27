@@ -29,3 +29,18 @@ test("every precached file and manifest icon exists", () => {
   const manifest = JSON.parse(read("manifest.webmanifest"));
   for (const i of manifest.icons) assert.ok(fs.existsSync(path.join(root, i.src)), `${i.src} is missing`);
 });
+
+test("quotes.json has thousands of well-formed thoughts of the day", () => {
+  const d = JSON.parse(read("quotes.json"));
+  assert.ok(d.q.length >= 2000, `only ${d.q.length} quotes`);
+  assert.deepEqual(d.cats, ["Stoic", "Mindfulness", "Realisation", "Motivating", "Wisdom"]);
+  const seen = new Set();
+  for (const [text, s, c] of d.q) {
+    assert.ok(typeof text === "string" && text.length >= 20 && text.length <= 240, `bad length: ${text}`);
+    assert.ok(d.src[s] && d.src[s][0], `no author for: ${text}`);
+    assert.ok(c >= 0 && c < d.cats.length, `bad category for: ${text}`);
+    const k = text.toLowerCase().replace(/[^a-z]/g, "");
+    assert.ok(!seen.has(k), `duplicate: ${text}`); seen.add(k);
+  }
+  for (let i = 1; i < d.q.length; i++) assert.notEqual(d.q[i][2], d.q[i - 1][2], `two ${d.cats[d.q[i][2]]} days in a row at ${i}`);
+});
